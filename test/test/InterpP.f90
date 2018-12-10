@@ -145,9 +145,9 @@
     call db3val(xval,yval,zval,idx,idy,idz,&
                 tx,ty,tz,nx,ny,nz,kx,ky,kz,fcn_3d,val,iflag,&
                 inbvx,inbvy,inbvz,iloy,iloz,extrap=.true.)
-    tru = f3(xval, yval, zval)
-    err = tru - val
-    write(*,*) err
+    !tru = f3(xval, yval, zval)
+    !err = tru - val
+    !write(*,*) err
     ! check max error against tolerance
 
 
@@ -162,4 +162,4 @@
     !    end function f3
 
 
-    end subroutine interp
+    end subroutine interpP

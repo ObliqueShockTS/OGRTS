@@ -1,4 +1,4 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Nov 27 17:25:53 2018
+        !COMPILER-GENERATED INTERFACE MODULE: Sun Dec 09 17:01:35 2018
         ! This source file is for reference only and may not completely
         ! represent the generated interface used by the compiler.
         MODULE GWS5__genmod

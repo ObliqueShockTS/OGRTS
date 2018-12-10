@@ -27,9 +27,13 @@
 		<Filter Name="Header Files" Filter="fi;fd"/>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<File RelativePath="..\..\..\..\InterP\InterP\cellcenter.f90"/>
-		<File RelativePath="..\..\Console1\Console1\GWS5.f"/>
-		<File RelativePath="..\..\..\..\InterP\InterP\InterP.f90"/>
+		<Filter Name="Intep">
+		<File RelativePath="..\..\..\bspline-fortran-master\src\bspline_kinds_module.f90"/>
+		<File RelativePath="..\..\..\bspline-fortran-master\src\bspline_module.f90"/>
+		<File RelativePath="..\..\..\bspline-fortran-master\src\bspline_oo_module.f90"/>
+		<File RelativePath="..\..\..\bspline-fortran-master\src\bspline_sub_module.f90"/></Filter>
+		<File RelativePath="..\..\..\..\..\..\..\Workspace\MyWork\InterP\InterP\cellcenter.f90"/>
+		<File RelativePath=".\GWS5.f"/>
 		<File RelativePath=".\InterpD.f90"/>
 		<File RelativePath=".\InterpP.f90"/>
 		<File RelativePath=".\test.f90"/></Filter>
