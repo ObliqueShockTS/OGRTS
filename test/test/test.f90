@@ -2,24 +2,29 @@ program test
     use bspline_kinds_module, only: wp
     implicit none
     
-    integer     :: nx, ny, nz, i, j , k,yd
-    integer     :: ii, jj, kk
+    integer     :: nx, ny, nz, nt, i, j , k,yd
+    integer     :: ii, jj, kk, NTT
     real        :: ZT, XT, YT
     real(wp)    :: d, d1, xver, yver, zver, dudx, dvdx, dcdx, dudy, dvdy, dcdy, dvdz, dt
     real(wp)    :: ValC, ValU, Valduz, Valdcz
+    real(wp)    :: omega, Kx, Ky, Kz, Knormal
     real(wp), dimension(4) ::  Xnx,Yny,Znz
     real(wp), allocatable  ::  x(:,:,:),y(:,:,:),z(:,:,:), dudz(:,:,:), dcdz(:,:,:)
     real(wp), allocatable  ::  xc(:,:,:),yc(:,:,:),zc(:,:,:)
     real(wp), allocatable  ::  C0(:,:,:),Uwind(:,:,:),Vwind(:,:,:)
     real(wp), allocatable  ::  XX(:,:,:),YY(:,:,:),ZZ(:,:,:),UU(:,:,:),CC(:,:,:)
+    real(wp), allocatable  ::  Xrecord(:), Yrecord(:), Zrecord(:)
     real, dimension(2)     ::  w
-    real(wp), dimension(3) ::  n
+    real(wp), dimension(3) ::  n, Nnew, Term1, Term2
     real(wp), dimension(2,2,2) :: Duz, Dcz
 
     nx=1000
     ny=50
     nz=100
     dt=.001_wp
+    nt=1000
+    dt=.01_wp
+    omega=15.
     allocate (x(nx,ny,nz))
     allocate (y(nx,ny,nz))
     allocate (z(nx,ny,nz))
@@ -36,6 +41,9 @@ program test
     allocate (CC(4,4,4))
     allocate (dudz(nx,ny,(nz-1)))
     allocate (dcdz(nx,ny,(nz-1)))
+    allocate (Xrecord(nt))
+    allocate (Yrecord(nt))
+    allocate (Zrecord(nt))
 
     
     do i=1,nx
@@ -71,14 +79,18 @@ program test
     n(1) = 1._wp/(2._wp)**.5_wp
     n(2) = 1._wp/(2._wp)**.5_wp
     n(3) = 0._wp
+    Nnew = n
     
+     
     call cellcenter(x,y,z,xc,yc,zc,nx,ny,nz)
     
+do NTT=1,nt
+    n=Nnew
     d1 = 1000000._wp
     ii = 0
     jj = 0
     kk = 0
-      
+    
     
     do i = 1,nx-1
         do j = 1,ny-1
@@ -94,6 +106,7 @@ program test
         end do
     end do
     
+    
     do i=1,4
         do j=1,4
             do k=1,4
@@ -102,7 +115,7 @@ program test
                 YY(i,j,k) = y(ii-2+i,jj-2+j,kk-2+k)
                 ZZ(i,j,k) = z(ii-2+i,jj-2+j,kk-2+k)
                 !UU(i,j,k) = Uwind(ii-2+i,jj-2+j,kk-2+k)
-                CC(i,j,k) = C0(ii-2+i,jj-2+j,kk-2+k)
+                !CC(i,j,k) = C0(ii-2+i,jj-2+j,kk-2+k)
                 
             end do
         end do
@@ -115,9 +128,10 @@ program test
                 zt = zz(i,j,k) 
                 yt = yy(i,j,k)
                 xt = xx(i,j,k)
-                call gws5(yd,-5.0,zt/1000.,(29.6516344+xt/1000./111.32),(-82.3248262+yt/1000./89.),12.0,150.0,150.0,(/4.0,4.0/),w(1:2))
+                call gws5(yd,-5.0,zt/1000.,(29.6516344+xt/1000./111.32),(-82.3248262+yt/1000./96.74),12.0,150.0,150.0,(/4.0,4.0/),w(1:2))
                 !call gws5(yd,-5.0,10.,29.6516344,-82.3248262,12.0,150.0,150.0,(/4.0,4.0/),w(1:2))
                 UU(i,j,k)  = w(2)
+                CC(i,j,k)  = C0(ii-2+i,jj-2+j,kk-2+k)
             end do
         end do
      end do     
@@ -150,6 +164,11 @@ program test
     !you have all the parameters to find n^bar
     !for one time step, your finite difference method for n^bar:
     
+    Knormal=omega/ValC
+    Kx=K*n(1)
+    Ky=K*n(2)
+    Kz=K*n(3)  
+    
     Term2(1) = dudx*kx+dvdx*ky+0._wp
     Term2(2) = dudy*kx+dvdy*ky+0._wp
     Term2(3) = dudz*kx+dvdz*ky+0._wp
@@ -158,11 +177,22 @@ program test
     Term1(2) = dcdy*k
     Term1(3) = dcdz*k
     
-    K(nt+1) = K(nt)+dt*(-Term1-Term2)
-    N(nt+1) = N(nt)+dt/K(nt)*(-Term1-Term2-sum(n*(-Term1-Term2)*n))
+    !Knew = K(nt)+dt*(-Term1-Term2)
+    Nnew = Nnew+dt/Knormal*(-Term1-Term2-sum(n*(-Term1-Term2))*n)
+    
+    Yrecord(NTT) = xver
+    Yrecord(NTT) = yver
+    Zrecord(NTT) = zver
+    
+    xver = xver+dt*(ValC*n(1))+ValU
+    yver = yver+dt*(ValC*n(2))+0.!ValV
+    zver = zver+dt*(ValC*n(3))+0.!ValW
+    
+enddo 
+
     
     
-    
+    write(*,*) Xrecord
     
     
     
