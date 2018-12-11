@@ -21,9 +21,8 @@ program test
     nx=1000
     ny=50
     nz=100
-    dt=10._wp
     nt=100
-    dt=0.1_wp
+    dt=1._wp
     omega=15.
     allocate (x(nx,ny,nz))
     allocate (y(nx,ny,nz))
@@ -174,7 +173,7 @@ do NTT=1,nt
     Knormal=omega/ValC
     Kx=Knormal*Nnew(1)
     Ky=Knormal*Nnew(2)
-    Kz=Knormal*Nnew(3)  
+    Kz=Knormal*Nnew(3)
     
     Term2(1) = dudx*kx+dvdx*ky+0._wp
     Term2(2) = dudy*kx+dvdy*ky+0._wp
@@ -186,7 +185,7 @@ do NTT=1,nt
     
     !Knew = K(nt)+dt*(-Term1-Term2)
     !print*,valduz
-    Nnew = Nnew+1./Knormal*(-Term1-Term2-sum(Nnew*(-Term1-Term2))*Nnew)
+    Nnew = Nnew+dt/Knormal*(-Term1-Term2-sum(Nnew*(-Term1-Term2))*Nnew)
     Xrecord(NTT) = xver
     Yrecord(NTT) = yver
     Zrecord(NTT) = zver
