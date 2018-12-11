@@ -31,4 +31,4 @@
 build
 doc
 lib
-bin
+bin  ./Debug/*

@@ -119,9 +119,7 @@
      
 !**************************************************************************
 
-    xval=0.5d0
-    yval=0.4d0
-    zval=0.8d0
+
 
     !have to set these before the first evaluate call:
     inbvx = 1

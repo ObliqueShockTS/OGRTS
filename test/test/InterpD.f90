@@ -95,7 +95,7 @@
     idx = 0
     idy = 0
     idz = 0
-
+    
 !**************************************************************************
 !change my serching domain and function value here
      !do i=1,nx
