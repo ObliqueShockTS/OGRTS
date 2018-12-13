@@ -6,23 +6,23 @@ program test
     integer     :: ii, jj, kk, NTT
     real        :: ZT, XT, YT
     real(wp)    :: d, d1, xver, yver, zver, dudx, dvdx, dcdx, dudy, dvdy, dcdy, dvdz, dt
-    real(wp)    :: ValC, ValU, Valduz, Valdcz
+    real(wp)    :: ValC, ValU, ValV, Valduz, Valdcz, Valdvz
     real(wp)    :: omega, Kx, Ky, Kz, Knormal
     real(wp), dimension(4) ::  Xnx,Yny,Znz
     real(wp), allocatable  ::  x(:,:,:),y(:,:,:),z(:,:,:), dudz(:,:,:), dcdz(:,:,:)
     real(wp), allocatable  ::  xc(:,:,:),yc(:,:,:),zc(:,:,:)
     real(wp), allocatable  ::  C0(:,:,:),Uwind(:,:,:),Vwind(:,:,:)
-    real(wp), allocatable  ::  XX(:,:,:),YY(:,:,:),ZZ(:,:,:),UU(:,:,:),CC(:,:,:)
+    real(wp), allocatable  ::  XX(:,:,:),YY(:,:,:),ZZ(:,:,:),UU(:,:,:),CC(:,:,:), VV(:,:,:)
     real(wp), allocatable  ::  Xrecord(:), Yrecord(:), Zrecord(:)
     real, dimension(2)     ::  w
     real(wp), dimension(3) ::  n, Nnew, Term1, Term2
-    real(wp), dimension(4,4,4) :: Duz, Dcz
+    real(wp), dimension(4,4,4) :: Duz, Dcz, Dvz
 
     nx=1000
     ny=50
     nz=100
     nt=100
-    dt=1._wp
+    dt=0.8_wp
     omega=15.
     allocate (x(nx,ny,nz))
     allocate (y(nx,ny,nz))
@@ -37,6 +37,7 @@ program test
     allocate (YY(4,4,4))
     allocate (ZZ(4,4,4))
     allocate (UU(4,4,4))
+    allocate (VV(4,4,4))
     allocate (CC(4,4,4))
     allocate (dudz(nx,ny,(nz-1)))
     allocate (dcdz(nx,ny,(nz-1)))
@@ -49,10 +50,10 @@ program test
       x(i,:,:) = 1000000._wp*(dble(i-1)/dble(nx-1))
     end do
     do i=1,ny
-      y(:,i,:) = 5000._wp*(dble(i-1)/dble(ny-1))
+      y(:,i,:) = 50000._wp*(dble(i-1)/dble(ny-1))
     end do
     do i=1,nz
-      z(:,:,i) = 10000._wp*(dble(i-1)/dble(nz-1))
+      z(:,:,i) = 100000._wp*(dble(i-1)/dble(nz-1))
     end do
     do i=1,nz
       C0(:,:,i) = 343._wp-dlog(1._wp+z(:,:,i))
@@ -61,20 +62,23 @@ program test
     do i=1,nz
         Uwind(:,:,i) = z(:,:,i)**2./1000000.
     end do
+    do i=1,nz
+        Vwind(:,:,i) = log(1.+z(:,:,i))/1000000.
+    end do
     
-    Vwind = 0._wp
+
     
     dudx = 0._wp
     dudy = 0._wp
     !dudz = Uwind(:,:,2:nz) - Uwind(:,:,1:nz-1)
     dvdx = 0._wp
     dvdy = 0._wp
-    dvdz = 0._wp
+    !dvdz = 0._wp
     dcdx = 0._wp
     dcdy = 0._wp
     
     xver = 100000._wp*.13_wp
-    yver = 5000._wp*.78_wp
+    yver = 50000._wp*.08_wp
     zver = 10000._wp*.3_wp
     n(1) = 1._wp/(2._wp)**.5_wp
     n(2) = 0._wp
@@ -92,6 +96,11 @@ do NTT=1,nt
     jj = 0
     kk = 0
     
+    !boundary condition judgement
+    If (Zver<(3000._wp)) then
+        Zver=abs(Zver)
+        Nnew(3)=-Nnew(3)
+    endif
     
     do i = 1,nx-1
         do j = 1,ny-1
@@ -102,10 +111,14 @@ do NTT=1,nt
                     ii = i
                     jj = j
                     kk = k
+                    !print*, KK
                 endif
             end do
         end do
     end do
+    
+    
+        
     !print*,xver
     !print*, ii,jj,kk
     do i=1,4
@@ -131,7 +144,8 @@ do NTT=1,nt
                 xt = xx(i,j,k)
                 call gws5(yd,-5.0,zt/1000.,(29.6516344+xt/1000./111.32),(-82.3248262+yt/1000./96.74),12.0,150.0,150.0,(/4.0,4.0/),w(1:2))
                 !call gws5(yd,-5.0,10.,29.6516344,-82.3248262,12.0,150.0,150.0,(/4.0,4.0/),w(1:2))
-                UU(i,j,k)  = w(2)!zt**2./1000000!w(2)
+                UU(i,j,k)  = zt**2./1000000!w(2)
+                VV(i,j,k)  = log(1.+zt)/100000
                 CC(i,j,k)  = 343._wp-dlog(1._wp+zt)!340-zt/1000!C0(ii-2+i,jj-2+j,kk-2+k)
             end do
         end do
@@ -144,6 +158,7 @@ do NTT=1,nt
             do k=1,4              
                 Duz(i,j,k) = (UWind(ii-1+i,jj-1+j,kk+k)-UWind(ii-1+i,jj-1+j,kk+k-2))/200.
                 Dcz(i,j,k) = (C0(ii-1+i,jj-1+j,kk+k)-C0(ii-1+i,jj-1+j,kk+k-2))/200.
+                Dvz(i,j,k) = (VWind(ii-1+i,jj-1+j,kk+k)-VWind(ii-1+i,jj-1+j,kk+k-2))/200.
             end do
         end do
     end do
@@ -157,7 +172,11 @@ do NTT=1,nt
    
     call interpP(Xnx,Yny,Znz,xver,yver,zver,UU,ValU)
     
+    call interpP(Xnx,Yny,Znz,xver,yver,zver,VV,ValV)
+    
     call interpP(Xnx,Yny,Znz,xver,yver,zver,Duz,Valduz)
+    
+    call interpP(Xnx,Yny,Znz,xver,yver,zver,Dvz,Valdvz)
     
     call interpP(Xnx,Yny,Znz,xver,yver,zver,Dcz,Valdcz)
     !print*, Valduz
@@ -177,11 +196,11 @@ do NTT=1,nt
     
     Term2(1) = dudx*kx+dvdx*ky+0._wp
     Term2(2) = dudy*kx+dvdy*ky+0._wp
-    Term2(3) = Valduz*kx+dvdz*ky+0._wp
+    Term2(3) = Valduz*kx+Valdvz*ky+0._wp
     
     Term1(1) = dcdx*Knormal
     Term1(2) = dcdy*Knormal
-    Term1(3) = Valduz*Knormal
+    Term1(3) = Valdcz*Knormal
     
     !Knew = K(nt)+dt*(-Term1-Term2)
     !print*,valduz
@@ -190,29 +209,15 @@ do NTT=1,nt
     Yrecord(NTT) = yver
     Zrecord(NTT) = zver
     
-    xver = xver+dt*((ValC*Nnew(1))+ValU)
-    yver = yver+dt*(ValC*Nnew(2))+0.!ValV
+    xver = xver+dt*(ValC*Nnew(1)+ValU)
+    yver = yver+dt*(ValC*Nnew(2)+ValV)+0.!ValV
     zver = zver+dt*(ValC*Nnew(3))+0.!ValW
-    print*,  Valdcz, Nnew(3)
+    print*,  Nnew(1),(sqrt((Nnew(1)**2+Nnew(3)**2))),Nnew(3)
     write(3,*) xver, yver, zver
+    
 enddo 
+    
 
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     !write(*,*) w(1), w(2), ZT , ZZ(4,4,4), (XT/1000.)
     
     
