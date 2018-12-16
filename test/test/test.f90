@@ -17,6 +17,8 @@ program test
     real, dimension(2)     ::  w
     real(wp), dimension(3) ::  n, Nnew, Term1, Term2
     real(wp), dimension(4,4,4) :: Duz, Dcz, Dvz
+    real(wp)  ::  soundspeed, Uwindspeed, Vwindspeed
+    real(wp)  ::  xp,yp,zp,xm,ym,zm,Cup,Cdown,Uup,Udown,Vup,Vdown,xt1,yt1,zt1
 
     nx=1000
     ny=50
@@ -60,10 +62,10 @@ program test
     end do
     
     do i=1,nz
-        Uwind(:,:,i) = z(:,:,i)**2./1000000.
+        Uwind(:,:,i) = (z(:,:,i)-2000)**2./100000.
     end do
     do i=1,nz
-        Vwind(:,:,i) = log(1.+z(:,:,i))/1000000.
+        Vwind(:,:,i) = log(1.+abs(z(:,:,i)-2000))/100000.
     end do
     
 
@@ -97,7 +99,7 @@ do NTT=1,nt
     kk = 0
     
     !boundary condition judgement
-    If (Zver<(3000._wp)) then
+    If (Zver<(2000._wp)) then
         Zver=abs(Zver)
         Nnew(3)=-Nnew(3)
     endif
@@ -120,7 +122,7 @@ do NTT=1,nt
     
         
     !print*,xver
-    !print*, ii,jj,kk
+    print*, kk
     do i=1,4
         do j=1,4
             do k=1,4
@@ -139,14 +141,17 @@ do NTT=1,nt
      do i=1,4
         do j=1,4
             do k=1,4
-                zt = zz(i,j,k) 
-                yt = yy(i,j,k)
-                xt = xx(i,j,k)
+                zt1 = zz(i,j,k) 
+                yt1 = yy(i,j,k)
+                xt1 = xx(i,j,k)
+                xt = real(xt1)
+                yt = real(yt1)
+                zt = real(zt1)
                 call gws5(yd,-5.0,zt/1000.,(29.6516344+xt/1000./111.32),(-82.3248262+yt/1000./96.74),12.0,150.0,150.0,(/4.0,4.0/),w(1:2))
                 !call gws5(yd,-5.0,10.,29.6516344,-82.3248262,12.0,150.0,150.0,(/4.0,4.0/),w(1:2))
-                UU(i,j,k)  = zt**2./1000000!w(2)
-                VV(i,j,k)  = log(1.+zt)/100000
-                CC(i,j,k)  = 343._wp-dlog(1._wp+zt)!340-zt/1000!C0(ii-2+i,jj-2+j,kk-2+k)
+                UU(i,j,k)  = Uwindspeed(xt1,yt1,zt1)!(zt-2000)**2./100000!w(2)
+                VV(i,j,k)  = Vwindspeed(xt1,yt1,zt1)!log(1.+abs(zt-2000))/100000
+                CC(i,j,k)  = Soundspeed(xt1,yt1,zt1)!343._wp-dlog(1._wp+abs(zt-2000))!340-zt/1000!C0(ii-2+i,jj-2+j,kk-2+k)
             end do
         end do
      end do     
@@ -155,10 +160,26 @@ do NTT=1,nt
  
     do i=1,4
         do j=1,4
-            do k=1,4              
-                Duz(i,j,k) = (UWind(ii-1+i,jj-1+j,kk+k)-UWind(ii-1+i,jj-1+j,kk+k-2))/200.
-                Dcz(i,j,k) = (C0(ii-1+i,jj-1+j,kk+k)-C0(ii-1+i,jj-1+j,kk+k-2))/200.
-                Dvz(i,j,k) = (VWind(ii-1+i,jj-1+j,kk+k)-VWind(ii-1+i,jj-1+j,kk+k-2))/200.
+            do k=1,4
+                xp=x(ii-1+i,jj-1+j,kk+k)
+                yp=y(ii-1+i,jj-1+j,kk+k)
+                zp=z(ii-1+i,jj-1+j,kk+k)
+                xm=x(ii-1+i,jj-1+j,kk+k-2)
+                ym=y(ii-1+i,jj-1+j,kk+k-2)
+                zm=z(ii-1+i,jj-1+j,kk+k-2)
+                
+                Uup   = Uwindspeed(xp,yp,zp)
+                Udown = Uwindspeed(xm,ym,zm)
+                
+                Vup   = Vwindspeed(xp,yp,zp)
+                Vdown = Vwindspeed(xm,ym,zm)
+                
+                Cup   = Soundspeed(xp,yp,zp)
+                Cdown = Soundspeed(xm,ym,zm)
+                
+                Duz(i,j,k) = (Uup-Udown)/2000.
+                Dcz(i,j,k) = (Cup-Cdown)/2000.
+                Dvz(i,j,k) = (Vup-Vdown)/2000.
             end do
         end do
     end do
@@ -205,6 +226,9 @@ do NTT=1,nt
     !Knew = K(nt)+dt*(-Term1-Term2)
     !print*,valduz
     Nnew = Nnew+dt/Knormal*(-Term1-Term2-sum(Nnew*(-Term1-Term2))*Nnew)
+    Nnew(1) = Nnew(1)/(sqrt((Nnew(1)**2+Nnew(2)**2+Nnew(3)**2)))
+    Nnew(2) = Nnew(2)/(sqrt((Nnew(1)**2+Nnew(2)**2+Nnew(3)**2)))
+    Nnew(3) = Nnew(3)/(sqrt((Nnew(1)**2+Nnew(2)**2+Nnew(3)**2)))
     Xrecord(NTT) = xver
     Yrecord(NTT) = yver
     Zrecord(NTT) = zver
@@ -212,7 +236,7 @@ do NTT=1,nt
     xver = xver+dt*(ValC*Nnew(1)+ValU)
     yver = yver+dt*(ValC*Nnew(2)+ValV)+0.!ValV
     zver = zver+dt*(ValC*Nnew(3))+0.!ValW
-    print*,  Nnew(1),(sqrt((Nnew(1)**2+Nnew(3)**2))),Nnew(3)
+    print*,  zver,(sqrt((Nnew(1)**2+Nnew(3)**2))),Nnew(3)
     write(3,*) xver, yver, zver
     
 enddo 
@@ -229,4 +253,34 @@ enddo
     !    end do
     !end do
 
-end program test
+    end program test
+
+    
+    
+function  Uwindspeed(x,y,z)
+  use bspline_kinds_module, only: wp
+  implicit none
+  real(wp)   ::  Uwindspeed, x,y,z
+
+  Uwindspeed = (z-2000)**2./100000
+
+end function
+
+function  Soundspeed(x,y,z)
+  use bspline_kinds_module, only: wp
+  implicit none
+  real(wp)   ::  Soundspeed, x,y,z
+
+  Soundspeed = 343._wp-dlog(1._wp+abs(z-2000))!.3_dp_t*Z
+  !Soundspeed = 323._dp_t+Z/10._dp_t!.2_dp_t*z
+
+endfunction
+    
+function  Vwindspeed(x,y,z)
+  use bspline_kinds_module, only: wp
+  implicit none
+  real(wp)   ::  Vwindspeed, x,y,z
+
+  Vwindspeed = 0.!(z-2000)**2./1000000
+
+end function
