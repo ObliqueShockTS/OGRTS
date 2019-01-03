@@ -33,6 +33,7 @@
 		<File RelativePath="..\..\..\bspline-fortran-master\src\bspline_oo_module.f90"/>
 		<File RelativePath="..\..\..\bspline-fortran-master\src\bspline_sub_module.f90"/></Filter>
 		<File RelativePath="..\..\..\..\..\..\..\Workspace\MyWork\InterP\InterP\cellcenter.f90"/>
+		<File RelativePath=".\GTD7.for"/>
 		<File RelativePath=".\GWS5.f"/>
 		<File RelativePath=".\InterpD.f90"/>
 		<File RelativePath=".\InterpP.f90"/>

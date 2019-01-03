@@ -1334,27 +1334,27 @@ C       SUM WINDS AND CHANGE MERIDIONAL SIGN TO + NORTH
       RETURN
       END
 C-----------------------------------------------------------------------
-      SUBROUTINE TSELEC(SV)
-C        SET SWITCHES
-C        SW FOR MAIN TERMS, SWC FOR CROSS TERMS
-      DIMENSION SV(1),SAV(25),SVV(1)
-      COMMON/CSW/SW(25),ISW,SWC(25)
-      DO 100 I = 1,25
-        SAV(I)=SV(I)
-        SW(I)=AMOD(SV(I),2.)
-        IF(ABS(SV(I)).EQ.1.OR.ABS(SV(I)).EQ.2.) THEN
-          SWC(I)=1.
-        ELSE
-          SWC(I)=0.
-        ENDIF
-  100 CONTINUE
-      ISW=64999
-      RETURN
-      ENTRY TRETRV(SVV)
-      DO 200 I=1,25
-        SVV(I)=SAV(I)
-  200 CONTINUE
-      END
+!      SUBROUTINE TSELEC(SV)
+!C        SET SWITCHES
+!C        SW FOR MAIN TERMS, SWC FOR CROSS TERMS
+!      DIMENSION SV(1),SAV(25),SVV(1)
+!      COMMON/CSW/SW(25),ISW,SWC(25)
+!      DO 100 I = 1,25
+!        SAV(I)=SV(I)
+!        SW(I)=AMOD(SV(I),2.)
+!        IF(ABS(SV(I)).EQ.1.OR.ABS(SV(I)).EQ.2.) THEN
+!          SWC(I)=1.
+!        ELSE
+!          SWC(I)=0.
+!        ENDIF
+!  100 CONTINUE
+!      ISW=64999
+!      RETURN
+!      ENTRY TRETRV(SVV)
+!      DO 200 I=1,25
+!        SVV(I)=SAV(I)
+!  200 CONTINUE
+!      END
 C-----------------------------------------------------------------------
       SUBROUTINE VSPHR1(C,S,L,M,BT,BP,LMAX)
 C      CALCULATE VECTOR SPHERICAL HARMONIC B FIELD THETA AND PHI
@@ -1431,73 +1431,73 @@ C      CALCULATE L=M CASE AND L=M+1
       RETURN
       END
 C-----------------------------------------------------------------------
-      SUBROUTINE SPLINE(X,Y,N,YP1,YPN,Y2)
-C        CALCULATE 2ND DERIVATIVES OF CUBIC SPLINE INTERP FUNCTION
-C        X,Y: ARRAYS OF TABULATED FUNCTION IN ASCENDING ORDER BY X
-C        N: SIZE OF ARRAYS X,Y
-C        YP1,YPN: SPECIFIED DERIVATIVES AT X(1) AND X(N); VALUES
-C                 >= 1E30 SIGNAL SIGNAL SECOND DERIVATIVE ZERO
-C        Y2: OUTPUT ARRAY OF SECOND DERIVATIVES
-      PARAMETER (NMAX=100)
-      DIMENSION X(N),Y(N),Y2(N),U(NMAX)
-      SAVE
-      IF(YP1.GT..99E30) THEN
-        Y2(1)=0
-        U(1)=0
-      ELSE
-        Y2(1)=-.5
-        U(1)=(3./(X(2)-X(1)))*((Y(2)-Y(1))/(X(2)-X(1))-YP1)
-      ENDIF
-      DO 11 I=2,N-1
-        SIG=(X(I)-X(I-1))/(X(I+1)-X(I-1))
-        P=SIG*Y2(I-1)+2.
-        Y2(I)=(SIG-1.)/P
-        U(I)=(6.*((Y(I+1)-Y(I))/(X(I+1)-X(I))-(Y(I)-Y(I-1))
-     $    /(X(I)-X(I-1)))/(X(I+1)-X(I-1))-SIG*U(I-1))/P
-   11 CONTINUE
-      IF(YPN.GT..99E30) THEN
-        QN=0
-        UN=0
-      ELSE
-        QN=.5
-        UN=(3./(X(N)-X(N-1)))*(YPN-(Y(N)-Y(N-1))/(X(N)-X(N-1)))
-      ENDIF
-      Y2(N)=(UN-QN*U(N-1))/(QN*Y2(N-1)+1.)
-      DO 12 K=N-1,1,-1
-        Y2(K)=Y2(K)*Y2(K+1)+U(K)
-   12 CONTINUE
-      RETURN
-      END
+!      SUBROUTINE SPLINE(X,Y,N,YP1,YPN,Y2)
+!C        CALCULATE 2ND DERIVATIVES OF CUBIC SPLINE INTERP FUNCTION
+!C        X,Y: ARRAYS OF TABULATED FUNCTION IN ASCENDING ORDER BY X
+!C        N: SIZE OF ARRAYS X,Y
+!C        YP1,YPN: SPECIFIED DERIVATIVES AT X(1) AND X(N); VALUES
+!C                 >= 1E30 SIGNAL SIGNAL SECOND DERIVATIVE ZERO
+!C        Y2: OUTPUT ARRAY OF SECOND DERIVATIVES
+!      PARAMETER (NMAX=100)
+!      DIMENSION X(N),Y(N),Y2(N),U(NMAX)
+!      SAVE
+!      IF(YP1.GT..99E30) THEN
+!        Y2(1)=0
+!        U(1)=0
+!      ELSE
+!        Y2(1)=-.5
+!        U(1)=(3./(X(2)-X(1)))*((Y(2)-Y(1))/(X(2)-X(1))-YP1)
+!      ENDIF
+!      DO 11 I=2,N-1
+!        SIG=(X(I)-X(I-1))/(X(I+1)-X(I-1))
+!        P=SIG*Y2(I-1)+2.
+!        Y2(I)=(SIG-1.)/P
+!        U(I)=(6.*((Y(I+1)-Y(I))/(X(I+1)-X(I))-(Y(I)-Y(I-1))
+!     $    /(X(I)-X(I-1)))/(X(I+1)-X(I-1))-SIG*U(I-1))/P
+!   11 CONTINUE
+!      IF(YPN.GT..99E30) THEN
+!        QN=0
+!        UN=0
+!      ELSE
+!        QN=.5
+!        UN=(3./(X(N)-X(N-1)))*(YPN-(Y(N)-Y(N-1))/(X(N)-X(N-1)))
+!      ENDIF
+!      Y2(N)=(UN-QN*U(N-1))/(QN*Y2(N-1)+1.)
+!      DO 12 K=N-1,1,-1
+!        Y2(K)=Y2(K)*Y2(K+1)+U(K)
+!   12 CONTINUE
+!      RETURN
+!      END
 C-----------------------------------------------------------------------
-      SUBROUTINE SPLINT(XA,YA,Y2A,N,X,Y)
-C        CALCULATE CUBIC SPLINE INTERP VALUE
-C        XA,YA: ARRAYS OF TABULATED FUNCTION IN ASCENDING ORDER BY X
-C        Y2A: ARRAY OF SECOND DERIVATIVES
-C        N: SIZE OF ARRAYS XA,YA,Y2A
-C        X: ABSCISSA FOR INTERPOLATION
-C        Y: OUTPUT VALUE
-      DIMENSION XA(N),YA(N),Y2A(N)
-      SAVE
-      KLO=1
-      KHI=N
-    1 CONTINUE
-      IF(KHI-KLO.GT.1) THEN
-        K=(KHI+KLO)/2
-        IF(XA(K).GT.X) THEN
-          KHI=K
-        ELSE
-          KLO=K
-        ENDIF
-        GOTO 1
-      ENDIF
-      H=XA(KHI)-XA(KLO)
-      IF(H.EQ.0) WRITE(6,*) 'BAD XA INPUT TO SPLINT'
-      A=(XA(KHI)-X)/H
-      B=(X-XA(KLO))/H
-      Y=A*YA(KLO)+B*YA(KHI)+
-     $  ((A*A*A-A)*Y2A(KLO)+(B*B*B-B)*Y2A(KHI))*H*H/6.
-      RETURN
-      END
+!      SUBROUTINE SPLINT(XA,YA,Y2A,N,X,Y)
+!C        CALCULATE CUBIC SPLINE INTERP VALUE
+!C        XA,YA: ARRAYS OF TABULATED FUNCTION IN ASCENDING ORDER BY X
+!C        Y2A: ARRAY OF SECOND DERIVATIVES
+!C        N: SIZE OF ARRAYS XA,YA,Y2A
+!C        X: ABSCISSA FOR INTERPOLATION
+!C        Y: OUTPUT VALUE
+!      DIMENSION XA(N),YA(N),Y2A(N)
+!      SAVE
+!      KLO=1
+!      KHI=N
+!    1 CONTINUE
+!      IF(KHI-KLO.GT.1) THEN
+!        K=(KHI+KLO)/2
+!        IF(XA(K).GT.X) THEN
+!          KHI=K
+!        ELSE
+!          KLO=K
+!        ENDIF
+!        GOTO 1
+!      ENDIF
+!      H=XA(KHI)-XA(KLO)
+!      IF(H.EQ.0) WRITE(6,*) 'BAD XA INPUT TO SPLINT'
+!      A=(XA(KHI)-X)/H
+!      B=(X-XA(KLO))/H
+!      Y=A*YA(KLO)+B*YA(KHI)+
+!     $  ((A*A*A-A)*Y2A(KLO)+(B*B*B-B)*Y2A(KHI))*H*H/6.
+!      RETURN
+!      END
 C-----------------------------------------------------------------------
       BLOCK DATA INITW5
 C       For wind model GWS
