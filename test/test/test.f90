@@ -15,7 +15,7 @@ program test
     real(wp), allocatable  ::  XX(:,:,:),YY(:,:,:),ZZ(:,:,:),UU(:,:,:),CC(:,:,:), VV(:,:,:)
     real(wp), allocatable  ::  Xrecord(:), Yrecord(:), Zrecord(:)
     real, dimension(2)     ::  w
-    real(wp), dimension(3) ::  n, Nnew, Term1, Term2
+    real(wp), dimension(3) ::  n, Nnew, Term1, Term2      
     real(wp), dimension(4,4,4) :: Duz, Dcz, Dvz
     real(wp)  ::  soundspeed, Uwindspeed, Vwindspeed
     real(wp)  ::  xp,yp,zp,xm,ym,zm,Cup,Cdown,Uup,Udown,Vup,Vdown,xt1,yt1,zt1
@@ -23,7 +23,7 @@ program test
     nx=1000
     ny=20
     nz=100
-    nt=100
+    nt=50
     dt=0.8_wp
     omega=15.
     allocate (x(nx,ny,nz))
@@ -49,7 +49,7 @@ program test
 
     
     do i=1,nx
-      x(i,:,:) = 1000000._wp*(dble(i-1)/dble(nx-1))
+      x(i,:,:) = 100000._wp*(dble(i-1)/dble(nx-1))
     end do
     do i=1,ny
       y(:,i,:) = 50000._wp*(dble(i-1)/dble(ny-1))
@@ -81,7 +81,7 @@ program test
     
     xver = 100000._wp*.13_wp
     yver = 50000._wp*.08_wp
-    zver = 2000.+10.
+    zver = 20000.+10.
     n(1) = 1._wp/(2._wp)**.5_wp
     n(2) = 0._wp
     n(3) = 1._wp/(2._wp)**.5_wp
@@ -92,7 +92,7 @@ program test
     open(unit = 3, file ='DataXYZ.txt',form='formatted')
     
 do NTT=1,nt
-    
+    omega=30.
     d1 = 1000000._wp
     ii = 0
     jj = 0
@@ -239,7 +239,7 @@ do NTT=1,nt
     xver = xver+dt*(ValC*Nnew(1)+ValU)
     yver = yver+dt*(ValC*Nnew(2)+ValV)+0.!ValV
     zver = zver+dt*(ValC*Nnew(3))+0.!ValW
-    print*,  zver,ValV, ValC
+    print*,  zver,ValU, ValC
     
     
 enddo 
