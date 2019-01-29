@@ -22,7 +22,7 @@ program test
 
     nx=1000
     ny=20
-    nz=100
+    nz=1000
     nt=50
     dt=0.8_wp
     omega=15.
@@ -99,8 +99,8 @@ do NTT=1,nt
     kk = 0
     
     !boundary condition judgement
-    If (Zver<(2000._wp)) then
-        Zver=4000.-abs(Zver)
+    If (Zver<(200._wp)) then
+        Zver=400.-abs(Zver)
         Nnew(3)=-Nnew(3)
     endif
     write(3,*) xver, yver, zver
@@ -119,8 +119,8 @@ do NTT=1,nt
         end do
     end do
     
-    
         
+    
     !print*,xver
     !print*, kk
     do i=1,4
