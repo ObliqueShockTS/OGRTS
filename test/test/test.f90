@@ -60,6 +60,7 @@ program test
     do i=1,nz
       z(:,:,i) = 100000._wp*(dble(i-1)/dble(nz-1))
     end do
+
     !do i=1,nz
     !  C0(:,:,i) = 343._wp-dlog(1._wp+z(:,:,i))
     !end do
@@ -135,7 +136,7 @@ program test
                     !UU(i,j,k) = Uwind(ii-2+i,jj-2+j,kk-2+k)
                     !CC(i,j,k) = C0(ii-2+i,jj-2+j,kk-2+k)
                     !print*, ii-2+i,jj-2+j,kk-2+k
-                end do
+                end doz
             end do
         end do
     
@@ -199,7 +200,11 @@ program test
 
         call interpP(Xnx,Yny,Znz,xver,yver,zver,VV,ValV)
 
+        !call interpP(Xnx,Yny,Znz,xver,yver,zver,WW,valW)
+
         call interpP(Xnx,Yny,Znz,xver,yver,zver,Duz,Valduz)
+
+        !call interpP(Xnx,Yny,Znz,xver,yver,zver,WW,Valdwz)
 
         call interpP(Xnx,Yny,Znz,xver,yver,zver,Dvz,Valdvz)
 
