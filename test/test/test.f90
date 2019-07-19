@@ -17,6 +17,8 @@ program test
     real(wp), allocatable  ::  C0(:,:,:),Uwind(:,:,:),Vwind(:,:,:)
     real(wp), allocatable  ::  XX(:,:,:),YY(:,:,:),ZZ(:,:,:),UU(:,:,:),CC(:,:,:), VV(:,:,:)
     real(wp), allocatable  ::  Xrecord(:), Yrecord(:), Zrecord(:)
+    real(wp), allocatable  ::  Vout(:,:,:,:,:), Location(:,:)
+    real(wp), allocatable  ::  C0out(:,:,:,:), XgridLoc(:,:,:,:,:), NNormalN(:,:)
     real, dimension(2)     ::  w
     real(wp), dimension(3) ::  n, Nnew, Term1, Term2      
     real(wp), dimension(4,4,4) :: Duz, Dcz, Dvz
@@ -24,11 +26,12 @@ program test
     real(wp)  ::  xp,yp,zp,xm,ym,zm,Cup,Cdown,Uup,Udown,Vup,Vdown,xt1,yt1,zt1
 
     nx = 1000
-    ny = 20
+    ny = 50
     nz = 1000
-    nt = 50
+    nt = 5
     dt = 0.8_wp
     omega = 15.
+    allocate (Location(3,nt))
     allocate (x(nx,ny,nz))
     allocate (y(nx,ny,nz))
     allocate (z(nx,ny,nz))
@@ -49,8 +52,11 @@ program test
     allocate (Xrecord(nt))
     allocate (Yrecord(nt))
     allocate (Zrecord(nt))
+    allocate (Vout(4,4,4,3,nt))
+    allocate (C0out(4,4,4,nt))
+    allocate (XgridLoc(4,4,4,3,nt))
+    allocate (NNormalN(3,nt))
 
-    
     do i=1,nx
       x(i,:,:) = 100000._wp*(dble(i-1)/dble(nx-1))
     end do
@@ -93,21 +99,29 @@ program test
     
      
     call cellcenter(x,y,z,xc,yc,zc,nx,ny,nz)
-    open(unit = 3, file ='DataXYZ.txt',form='formatted')
+    
     
     do NTT=1,nt
+        Location(1,NTT) = xver
+        Location(2,NTT) = yver
+        Location(3,NTT) = zver
+        
         omega=30.
         d1 = 1000000._wp
         ii = 0
         jj = 0
         kk = 0
-    
+
+        NNormalN(1,NTT) = n(1)
+        NNormalN(2,NTT) = n(2)
+        NNormalN(3,NTT) = n(3)
+
         !boundary condition judgement
         If (Zver<(200._wp)) then
             Zver=400.-abs(Zver)
             Nnew(3)=-Nnew(3)
         endif
-        write(3,*) xver, yver, zver
+        !write(3,'(3e16.8)') xver, yver, zver
         do i = 1,nx-1
             do j = 1,ny-1
                 do,k = 1,nz-1
@@ -136,17 +150,21 @@ program test
                     !UU(i,j,k) = Uwind(ii-2+i,jj-2+j,kk-2+k)
                     !CC(i,j,k) = C0(ii-2+i,jj-2+j,kk-2+k)
                     !print*, ii-2+i,jj-2+j,kk-2+k
-                end doz
+                end do
             end do
         end do
-    
-        !calculate Uwind and C0 for 4X4X4 domian
-         do i=1,4
+        !Output Gird Coordinates
+
+
+
+        !
+        !calculate Uwind and C0 for 4X4X4 do    ian
+        do i=1,4
             do j=1,4
                 do k=1,4
                     zt1 = zz(i,j,k) 
-                    yt1 = yy(i,j,k)
-                    xt1 = xx(i,j,k)
+                    yt1 = YY(i,j,k)
+                    xt1 = XX(i,j,k)
                     xt = real(xt1)
                     yt = real(yt1)
                     zt = real(zt1)
@@ -160,10 +178,17 @@ program test
                     CC(i,j,k)  = Soundspeed(xt1,yt1,zt1)!343._wp-dlog(1._wp+abs(zt-2000))!340-zt/1000!C0(ii-2+i,jj-2+j,kk-2+k)
                 end do
             end do
-         end do  
+        end do  
+        Vout(:,:,:,1,NTT) = UU
+        Vout(:,:,:,2,NTT) = VV
+        Vout(:,:,:,3,NTT) = 0.0
+        C0out(:,:,:,NTT) = CC
+        !XgridLoc(i,j,k,Cor_(1=x,2=y,3=z),Time)
+        XgridLoc(:,:,:,1,NTT) = XX
+        XgridLoc(:,:,:,2,NTT) = YY
+        XgridLoc(:,:,:,3,NTT) = ZZ
         !write(*,*) UU, w(1), w(2), xt
-
-     
+        
         do i=1,4
             do j=1,4
                 do k=1,4
@@ -173,6 +198,18 @@ program test
                     xm = x(ii-1+i,jj-1+j,kk+k-2)
                     ym = y(ii-1+i,jj-1+j,kk+k-2)
                     zm = z(ii-1+i,jj-1+j,kk+k-2)
+                    !xl = 
+                    !yl = 
+                    !zl =  
+                    !xr =  
+                    !yr = 
+                    !zr =  
+                    !xf = 
+                    !yf = 
+                    !zf = 
+                    !xb = 
+                    !yb = 
+                    !zb = 
 
                     Uup   = Uwindspeed(xp,yp,zp)
                     Udown = Uwindspeed(xm,ym,zm)
@@ -182,6 +219,10 @@ program test
 
                     Cup   = Soundspeed(xp,yp,zp)
                     Cdown = Soundspeed(xm,ym,zm)
+                    !Cleft = 
+                    !Cright=
+                    !Cfront= 
+                    !Cback = 
 
                     Duz(i,j,k) = (Uup-Udown)/200.
                     Dcz(i,j,k) = (Cup-Cdown)/200.
@@ -194,6 +235,8 @@ program test
         Yny = YY(1,:,1)
         Znz = ZZ(1,1,:)
 
+
+        !call interpD(Xnx(2:3),Yny(2:3),Znz(2:3),xver,yver,zver, UU(2:3,2:3,2:3),ValU)
         call interpP(Xnx,Yny,Znz,xver,yver,zver,CC,ValC)
     
         call interpP(Xnx,Yny,Znz,xver,yver,zver,UU,ValU)
@@ -247,9 +290,27 @@ program test
         zver = zver+dt*(ValC*Nnew(3))+0.!ValW
         print*,  zver,ValU, ValC
 
+    enddo
 
-    enddo 
-    
+    open(unit = 3, file ='DataXYZ.txt',form='formatted')
+    write(3, '(3e16.8)') Location
+    close(3)
+
+    open(51,file = 'VelocityGeoOut.txt')
+    write(51, '(64e16.8)') Vout
+    close(51)
+    open(52,file = 'SpeedofSoundGeoOut.txt')
+    write(52, '(64e16.8)') C0out
+    close(52)
+    open(53,file = 'XgridLoc.txt')
+    write(53, '(32e16.8)') XgridLoc
+    close(53)
+    open(54, file = 'Normal.txt')
+    write(54, '(3e16.8)') NNormalN
+    close(54)
+    ! open(54, file = 'XverLoc.txt')
+    ! write(54,'3e16.4')
+    ! close(54)
 
     !write(*,*) w(1), w(2), ZT , ZZ(4,4,4), (XT/1000.)
     
