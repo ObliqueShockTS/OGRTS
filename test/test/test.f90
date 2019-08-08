@@ -6,7 +6,8 @@ program test
     implicit none
     
     integer     :: nx, ny, nz, nt, i, j , k, yd
-    integer     :: ii, jj, kk, NTT
+    integer     :: ii, jj, kk, NTT, ReflectionTimeIndex
+    integer, allocatable   ::  ReflectionPointMax(:)
     real        :: ZT, XT, YT
     real(wp)    :: d, d1, xver, yver, zver, dudx, dvdx, dcdx, dudy, dvdy, dcdy, dvdz, dt
     real(wp)    :: ValC, ValU, ValV, Valduz, Valdcz, Valdvz
@@ -28,9 +29,10 @@ program test
     nx = 1000
     ny = 50
     nz = 1000
-    nt = 5
+    nt = 100
     dt = 0.8_wp
     omega = 15.
+    allocate (ReflectionPointMax(1000))
     allocate (Location(3,nt))
     allocate (x(nx,ny,nz))
     allocate (y(nx,ny,nz))
@@ -58,7 +60,7 @@ program test
     allocate (NNormalN(3,nt))
 
     do i=1,nx
-      x(i,:,:) = 100000._wp*(dble(i-1)/dble(nx-1))
+      x(i,:,:) = 100000._wp*(dble(i-1)/dble(nx-1)) 
     end do
     do i=1,ny
       y(:,i,:) = 50000._wp*(dble(i-1)/dble(ny-1))
@@ -100,7 +102,9 @@ program test
      
     call cellcenter(x,y,z,xc,yc,zc,nx,ny,nz)
     
-    
+    ReflectionTimeIndex = 1
+    open(91,file = '/home/tianshu/Documents/DATATRANSFER/ReflectionTime.txt')
+
     do NTT=1,nt
         Location(1,NTT) = xver
         Location(2,NTT) = yver
@@ -112,14 +116,16 @@ program test
         jj = 0
         kk = 0
 
-        NNormalN(1,NTT) = n(1)
+        NNormalN(1,NTT) = n(1) 
         NNormalN(2,NTT) = n(2)
         NNormalN(3,NTT) = n(3)
-
-        !boundary condition judgement
+        !boundary condition judgement (perfect reflecction)
         If (Zver<(200._wp)) then
             Zver=400.-abs(Zver)
             Nnew(3)=-Nnew(3)
+            !write(91, *) NTT
+            ReflectionPointMax(ReflectionTimeIndex) = NTT
+            ReflectionTimeIndex = ReflectionTimeIndex + 1
         endif
         !write(3,'(3e16.8)') xver, yver, zver
         do i = 1,nx-1
@@ -168,11 +174,6 @@ program test
                     xt = real(xt1)
                     yt = real(yt1)
                     zt = real(zt1)
-                    !call gws5(yd,-5.0,zt/1000.,(29.6516344+xt/1000./111.32),...
-                    !...(-82.3248262+yt/1000./96.74),12.0,150.0,150.0,(/4.0,4.0/),w(1:2))
-                    !call GTD7(yd,-5.0,zt/1000.,(29.6516344+xt/1000./111.32),...
-                    !...(-82.3248262+yt/1000./96.74),12,F107A,F107,AP,MASS,D,T)
-                    !call gws5(yd,-5.0,10.,29.6516344,-82.3248262,12.0,150.0,150.0,(/4.0,4.0/),w(1:2))
                     UU(i,j,k)  = Uwindspeed(xt1,yt1,zt1)!(zt-2000)**2./100000!w(2)
                     VV(i,j,k)  = Vwindspeed(xt1,yt1,zt1)!log(1.+abs(zt-2000))/100000
                     CC(i,j,k)  = Soundspeed(xt1,yt1,zt1)!343._wp-dlog(1._wp+abs(zt-2000))!340-zt/1000!C0(ii-2+i,jj-2+j,kk-2+k)
@@ -292,20 +293,25 @@ program test
 
     enddo
 
-    open(unit = 3, file ='DataXYZ.txt',form='formatted')
+    write(91,*) ReflectionTimeIndex
+    if (ReflectionTimeIndex > 1) then
+        write(91,*) ReflectionPointMax(1:ReflectionTimeIndex)
+    endif
+    close(91)
+    open(unit = 3, file ='/home/tianshu/Documents/DATATRANSFER/DataXYZ.txt',form='formatted')
     write(3, '(3e16.8)') Location
     close(3)
 
-    open(51,file = 'VelocityGeoOut.txt')
+    open(51,file = '/home/tianshu/Documents/DATATRANSFER/VelocityGeoOut.txt')
     write(51, '(64e16.8)') Vout
     close(51)
-    open(52,file = 'SpeedofSoundGeoOut.txt')
+    open(52,file = '/home/tianshu/Documents/DATATRANSFER/SpeedofSoundGeoOut.txt')
     write(52, '(64e16.8)') C0out
     close(52)
-    open(53,file = 'XgridLoc.txt')
+    open(53,file = '/home/tianshu/Documents/DATATRANSFER/XgridLoc.txt')
     write(53, '(32e16.8)') XgridLoc
     close(53)
-    open(54, file = 'Normal.txt')
+    open(54, file = '/home/tianshu/Documents/DATATRANSFER/Normal.txt')
     write(54, '(3e16.8)') NNormalN
     close(54)
     ! open(54, file = 'XverLoc.txt')
