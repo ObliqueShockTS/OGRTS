@@ -9,6 +9,7 @@ program test
     integer     :: ii, jj, kk, NTT, ReflectionTimeIndex
     integer, allocatable   ::  ReflectionPointMax(:)
     real        :: ZT, XT, YT
+    real, dimension(2)     ::  w
     real(wp)    :: d, d1, xver, yver, zver, dudx, dvdx, dcdx, dudy, dvdy, dcdy, dvdz, dt
     real(wp)    :: ValC, ValU, ValV, Valduz, Valdcz, Valdvz
     real(wp)    :: omega, Kx, Ky, Kz, Knormal
@@ -19,18 +20,20 @@ program test
     real(wp), allocatable  ::  XX(:,:,:),YY(:,:,:),ZZ(:,:,:),UU(:,:,:),CC(:,:,:), VV(:,:,:)
     real(wp), allocatable  ::  Xrecord(:), Yrecord(:), Zrecord(:)
     real(wp), allocatable  ::  Vout(:,:,:,:,:), Location(:,:)
-    real(wp), allocatable  ::  C0out(:,:,:,:), XgridLoc(:,:,:,:,:), NNormalN(:,:)
-    real, dimension(2)     ::  w
-    real(wp), dimension(3) ::  n, Nnew, Term1, Term2      
-    real(wp), dimension(4,4,4) :: Duz, Dcz, Dvz
+    real(wp), allocatable  ::  C0out(:,:,:,:), XgridLoc(:,:,:,:,:), NNormalN(:,:)  
+    real(wp), dimension(4,4,4) :: Duz, Dcz, Dvz, Duy, Dcy, Dvy, Dux, Dcx, Dvx
+    real(wp), dimension(3) ::  n, Nnew, Term1, Term2    
     real(wp)  ::  soundspeed, Uwindspeed, Vwindspeed
-    real(wp)  ::  xp,yp,zp,xm,ym,zm,Cup,Cdown,Uup,Udown,Vup,Vdown,xt1,yt1,zt1
+    real(wp)  ::  xt1,yt1,zt1
+    real(wp)  ::  xp,yp,zp,xm,ym,zm, Cdown,  Udown,  Vdown, Cup,    Vup,    Uup
+    real(wp)  ::  xl,yl,zl,xr,yr,zr, Cleft,  Uleft,  Vleft, Cright, Uright, Vright
+    real(wp)  ::  xf,yf,zf,xb,yb,zb, Cfront, Ufront, Vfront,Cback,  Uback , Vback
 
     nx = 1000
     ny = 50
     nz = 1000
     nt = 100
-    dt = 0.8_wp
+    dt = 0.01_wp
     omega = 15.
     allocate (ReflectionPointMax(1000))
     allocate (Location(3,nt))
@@ -90,10 +93,11 @@ program test
     !dvdz = 0._wp
     dcdx = 0._wp
     dcdy = 0._wp
-    
+    !z_step = zrange/nz
     xver = 100000._wp*.13_wp
     yver = 50000._wp*.08_wp
     zver = 20000.+10.
+
     n(1) = 1._wp/(2._wp)**.5_wp
     n(2) = 0._wp
     n(3) = 1._wp/(2._wp)**.5_wp
@@ -193,41 +197,59 @@ program test
         do i=1,4
             do j=1,4
                 do k=1,4
-                    xp = x(ii-1+i,jj-1+j,kk+k)
+                    !For D()/Dz Consideration, get related coordinates
+                    xp = x(ii-1+i,jj-1+j,kk+k)      !get coordinate of up point
                     yp = y(ii-1+i,jj-1+j,kk+k)
                     zp = z(ii-1+i,jj-1+j,kk+k)
-                    xm = x(ii-1+i,jj-1+j,kk+k-2)
+                    xm = x(ii-1+i,jj-1+j,kk+k-2)    !get coordinate of bottom point
                     ym = y(ii-1+i,jj-1+j,kk+k-2)
                     zm = z(ii-1+i,jj-1+j,kk+k-2)
-                    !xl = 
-                    !yl = 
-                    !zl =  
-                    !xr =  
-                    !yr = 
-                    !zr =  
-                    !xf = 
-                    !yf = 
-                    !zf = 
-                    !xb = 
-                    !yb = 
-                    !zb = 
-
+                    !For D()/Dy consideration, get related coordinates
+                    xl = x(ii-1+i, jj+j, kk+k-1)    !get coordinates of left point
+                    yl = y(ii-1+1, jj+j, kk+k-1)    
+                    zl = z(ii-1+i, jj+j, kk+k-1)
+                    xr = x(ii-1+i, jj-2+j, kk+k-1)  !get coordinate of right point
+                    yr = y(ii-1+i, jj-2+j, kk+k-1)
+                    zr = z(ii-1+i, jj-2+j, kk+k-1)
+                    !For D()/Dx consideration, get related coordinates
+                    xf = x(ii+i, jj-1+j, kk+k-1)
+                    yf = y(ii+i, jj-1+j, kk+k-1)
+                    zf = z(ii+i, jj-1+j, kk+k-1)
+                    xb = x(ii-2+i, jj-1+j, kk+k-1)
+                    yb = y(ii-2+i, jj-1+j, kk+k-1)
+                    zb = z(ii-2+i, jj-1+j, kk+k-1)
+                    !get Uwind for different points
                     Uup   = Uwindspeed(xp,yp,zp)
                     Udown = Uwindspeed(xm,ym,zm)
-
+                    Uleft = Uwindspeed(xl,yl,zl)
+                    Uright= Uwindspeed(xr,yr,zr)
+                    Ufront= Uwindspeed(xf,yf,zf)
+                    Uback = Uwindspeed(xb,yb,zb)
+                    !Get Vwind for different points
                     Vup   = Vwindspeed(xp,yp,zp)
                     Vdown = Vwindspeed(xm,ym,zm)
-
+                    Vleft = Vwindspeed(xl,yl,zl)
+                    Vright= Vwindspeed(xr,yr,zr)
+                    Vfront= Vwindspeed(xf,yf,zf)
+                    Vback = Vwindspeed(xb,yb,zb)
+                    !Get Speed of Sound for different points
                     Cup   = Soundspeed(xp,yp,zp)
                     Cdown = Soundspeed(xm,ym,zm)
-                    !Cleft = 
-                    !Cright=
-                    !Cfront= 
-                    !Cback = 
+                    Cleft = Soundspeed(xl,yl,zl)
+                    Cright= Soundspeed(xr,yr,zr)
+                    Cfront= Soundspeed(xf,yf,zf)
+                    Cback = Soundspeed(xb,yb,zb)
 
-                    Duz(i,j,k) = (Uup-Udown)/200.
-                    Dcz(i,j,k) = (Cup-Cdown)/200.
-                    Dvz(i,j,k) = (Vup-Vdown)/200.
+                    Duz(i,j,k) = (Uup-Udown)    / 200.
+                    Dcz(i,j,k) = (Cup-Cdown)    / 200.
+                    Dvz(i,j,k) = (Vup-Vdown)    / 200.
+                    Duy(i,j,k) = (Uleft-Uright) / 200.
+                    Dcy(i,j,k) = (Cleft-Cright) / 200.
+                    Dvy(i,j,k) = (Vleft-Vright) / 200.
+                    Dux(i,j,k) = (Ufront-Uback) / 200.
+                    Dcx(i,j,k) = (Cfront-Cback) / 200.
+                    Dvx(i,j,k) = (Vfront-Vback) / 200.
+
                 end do
             end do
         end do
@@ -301,7 +323,7 @@ program test
     open(unit = 3, file ='/home/tianshu/Documents/DATATRANSFER/DataXYZ.txt',form='formatted')
     write(3, '(3e16.8)') Location
     close(3)
-
+    
     open(51,file = '/home/tianshu/Documents/DATATRANSFER/VelocityGeoOut.txt')
     write(51, '(64e16.8)') Vout
     close(51)
