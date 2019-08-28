@@ -10,8 +10,9 @@ program test
     integer, allocatable   ::  ReflectionPointMax(:)
     real        :: ZT, XT, YT
     real, dimension(2)     ::  w
-    real(wp)    :: d, d1, xver, yver, zver, dudx, dvdx, dcdx, dudy, dvdy, dcdy, dvdz, dt
-    real(wp)    :: ValC, ValU, ValV, Valduz, Valdcz, Valdvz
+    real(wp)    :: d, d1, xver, yver, zver, dt
+    real(wp)    :: ValC, ValU, ValV, Valduz, Valdvz, Valdwz, Valduy, Valdvy, Valdwy
+    real(wp)    :: Valdcx, Valdcy, Valdcz, Valdux, Valdvx, Valdwx
     real(wp)    :: omega, Kx, Ky, Kz, Knormal
     real(wp), dimension(4) ::  Xnx,Yny,Znz
     real(wp), allocatable  ::  x(:,:,:),y(:,:,:),z(:,:,:), dudz(:,:,:), dcdz(:,:,:)
@@ -21,20 +22,28 @@ program test
     real(wp), allocatable  ::  Xrecord(:), Yrecord(:), Zrecord(:)
     real(wp), allocatable  ::  Vout(:,:,:,:,:), Location(:,:)
     real(wp), allocatable  ::  C0out(:,:,:,:), XgridLoc(:,:,:,:,:), NNormalN(:,:)  
-    real(wp), dimension(4,4,4) :: Duz, Dcz, Dvz, Duy, Dcy, Dvy, Dux, Dcx, Dvx
+    real(wp), dimension(4,4,4) :: Duz, Dcz, Dvz, Duy, Dcy, Dvy, Dux, Dcx, Dvx, Dwx, Dwy, Dwz
     real(wp), dimension(3) ::  n, Nnew, Term1, Term2    
     real(wp)  ::  soundspeed, Uwindspeed, Vwindspeed
-    real(wp)  ::  xt1,yt1,zt1
+    real(wp)  ::  xt1,yt1,zt1,angle_theta,angle_phi
     real(wp)  ::  xp,yp,zp,xm,ym,zm, Cdown,  Udown,  Vdown, Cup,    Vup,    Uup
     real(wp)  ::  xl,yl,zl,xr,yr,zr, Cleft,  Uleft,  Vleft, Cright, Uright, Vright
     real(wp)  ::  xf,yf,zf,xb,yb,zb, Cfront, Ufront, Vfront,Cback,  Uback , Vback
+    character(100)  ::  str2theta, str2phi
+
+    call get_command_argument(1, str2theta)
+    call get_command_argument(2, str2phi) 
+    read(str2phi,*)angle_phi
+    read(str2theta,*)angle_theta
+    angle_phi = angle_phi*4.0 * ATAN(1.0)/180.0
+    angle_theta = angle_theta*4.0 * ATAN(1.0)/180.0
 
     nx = 1000
     ny = 50
     nz = 1000
-    nt = 100
+    nt = 10
     dt = 0.01_wp
-    omega = 15.
+    omega = 150.
     allocate (ReflectionPointMax(1000))
     allocate (Location(3,nt))
     allocate (x(nx,ny,nz))
@@ -83,31 +92,21 @@ program test
     !    Vwind(:,:,i) = log(1.+abs(z(:,:,i)-2000))/100000.
     !end do
     
-
-    
-    dudx = 0._wp
-    dudy = 0._wp
-    !dudz = Uwind(:,:,2:nz) - Uwind(:,:,1:nz-1)
-    dvdx = 0._wp
-    dvdy = 0._wp
-    !dvdz = 0._wp
-    dcdx = 0._wp
-    dcdy = 0._wp
     !z_step = zrange/nz
     xver = 100000._wp*.13_wp
     yver = 50000._wp*.08_wp
     zver = 20000.+10.
 
-    n(1) = 1._wp/(2._wp)**.5_wp
-    n(2) = 0._wp
-    n(3) = 1._wp/(2._wp)**.5_wp
+    n(1) = cos(angle_theta)!1._wp/(2._wp)**.5_wp
+    n(2) = 0!sin(angle_phi)
+    n(3) = sin(angle_theta)!1._wp/(2._wp)**.5_wp
     Nnew = n
-    
+    print*, n(1), n(2), n(3)
      
     call cellcenter(x,y,z,xc,yc,zc,nx,ny,nz)
     
     ReflectionTimeIndex = 1
-    open(91,file = '/home/tianshu/Documents/DATATRANSFER/ReflectionTime.txt')
+    !open(91,file = '/home/tianshu/Documents/DATATRANSFER/ReflectionTime.txt')
 
     do NTT=1,nt
         Location(1,NTT) = xver
@@ -267,14 +266,24 @@ program test
         call interpP(Xnx,Yny,Znz,xver,yver,zver,VV,ValV)
 
         !call interpP(Xnx,Yny,Znz,xver,yver,zver,WW,valW)
-
+        call interpP(Xnx,Yny,Znz,xver,yver,zver,Dwz,Valdwz)
+        call interpP(Xnx,Yny,Znz,xver,yver,zver,Dvz,Valdvz)
         call interpP(Xnx,Yny,Znz,xver,yver,zver,Duz,Valduz)
 
         !call interpP(Xnx,Yny,Znz,xver,yver,zver,WW,Valdwz)
 
-        call interpP(Xnx,Yny,Znz,xver,yver,zver,Dvz,Valdvz)
+        call interpP(Xnx,Yny,Znz,xver,yver,zver,Dwy,Valdwy)
+        call interpP(Xnx,Yny,Znz,xver,yver,zver,Dvy,Valdvy)
+        call interpP(Xnx,Yny,Znz,xver,yver,zver,Duy,Valduy)
 
+        call interpP(Xnx,Yny,Znz,xver,yver,zver,Dwx,Valdwx)
+        call interpP(Xnx,Yny,Znz,xver,yver,zver,Dvx,Valdvx)
+        call interpP(Xnx,Yny,Znz,xver,yver,zver,Dux,Valdux)
+
+        call interpP(Xnx,Yny,Znz,xver,yver,zver,Dcx,Valdcx)
+        call interpP(Xnx,Yny,Znz,xver,yver,zver,Dcy,Valdcy)
         call interpP(Xnx,Yny,Znz,xver,yver,zver,Dcz,Valdcz)
+        
         !print*, Valduz
         !**********************************************************************
         ! start here
@@ -290,13 +299,13 @@ program test
         Ky = Knormal*Nnew(2)
         Kz = Knormal*Nnew(3)
 
-        Term2(1) = dudx*kx+dvdx*ky+0._wp
-        Term2(2) = dudy*kx+dvdy*ky+0._wp
-        Term2(3) = Valduz*kx+Valdvz*ky+0._wp
+        Term2(1) = Valdux*kx+Valdvx*ky+Valdwx*kz!dudx*kx+dvdx*ky+0._wp
+        Term2(2) = Valduy*kx+Valdvy*ky+Valdwy*kz!dudy*kx+dvdy*ky+0._wp
+        Term2(3) = Valduz*kx+Valdvz*ky+Valdvz*kz+0._wp
 
-        Term1(1) = dcdx*Knormal
-        Term1(2) = dcdy*Knormal
-        Term1(3) = Valdcz*Knormal
+        Term1(1) = Valdcx*Knormal! Valdcx * Knormmal
+        Term1(2) = Valdcy*Knormal! Valdcy * Knormal
+        Term1(3) = Valdcz*Knormal! 
 
         !Knew = K(nt)+dt*(-Term1-Term2)
         !print*,valduz
@@ -315,27 +324,28 @@ program test
 
     enddo
 
-    write(91,*) ReflectionTimeIndex
-    if (ReflectionTimeIndex > 1) then
-        write(91,*) ReflectionPointMax(1:ReflectionTimeIndex)
-    endif
-    close(91)
-    open(unit = 3, file ='/home/tianshu/Documents/DATATRANSFER/DataXYZ.txt',form='formatted')
+    ! write(91,*) ReflectionTimeIndex
+    ! if (ReflectionTimeIndex > 1) then
+    !     write(91,*) ReflectionPointMax(1:ReflectionTimeIndex)
+    ! endif
+    ! close(91)
+    call system ( "mkdir -p " // 'Data' )
+    open(unit = 3, file ='./Data/DataXYZ'//trim(str2phi)//'-'//trim(str2theta)//'.txt',form='formatted')
     write(3, '(3e16.8)') Location
     close(3)
     
-    open(51,file = '/home/tianshu/Documents/DATATRANSFER/VelocityGeoOut.txt')
-    write(51, '(64e16.8)') Vout
-    close(51)
-    open(52,file = '/home/tianshu/Documents/DATATRANSFER/SpeedofSoundGeoOut.txt')
-    write(52, '(64e16.8)') C0out
-    close(52)
-    open(53,file = '/home/tianshu/Documents/DATATRANSFER/XgridLoc.txt')
-    write(53, '(32e16.8)') XgridLoc
-    close(53)
-    open(54, file = '/home/tianshu/Documents/DATATRANSFER/Normal.txt')
-    write(54, '(3e16.8)') NNormalN
-    close(54)
+    !open(51,file = '/home/tianshu/Documents/DATATRANSFER/VelocityGeoOut.txt')
+    !write(51, '(64e16.8)') Vout
+    !close(51)
+    !open(52,file = '/home/tianshu/Documents/DATATRANSFER/SpeedofSoundGeoOut.txt')
+    !write(52, '(64e16.8)') C0out
+    !close(52)
+    !open(53,file = '/home/tianshu/Documents/DATATRANSFER/XgridLoc.txt')
+    !write(53, '(32e16.8)') XgridLoc
+    !close(53)
+    !open(54, file = '/home/tianshu/Documents/DATATRANSFER/Normal.txt')
+    !write(54, '(3e16.8)') NNormalN
+    !close(54)
     ! open(54, file = 'XverLoc.txt')
     ! write(54,'3e16.4')
     ! close(54)
