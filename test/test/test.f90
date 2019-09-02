@@ -29,6 +29,7 @@ program test
     real(wp)  ::  xp,yp,zp,xm,ym,zm, Cdown,  Udown,  Vdown, Cup,    Vup,    Uup
     real(wp)  ::  xl,yl,zl,xr,yr,zr, Cleft,  Uleft,  Vleft, Cright, Uright, Vright
     real(wp)  ::  xf,yf,zf,xb,yb,zb, Cfront, Ufront, Vfront,Cback,  Uback , Vback
+    real(wp)  ::  Xre, Yre, Zre
     character(100)  ::  str2theta, str2phi
 
     call get_command_argument(1, str2theta)
@@ -43,7 +44,10 @@ program test
     nz = 1000
     nt = 10
     dt = 0.01_wp
-    omega = 150.
+
+    Xre = 100000._wp * .8
+    Yre = 50000._wp * .01
+    Zre = 100000._wp * 0.1
     allocate (ReflectionPointMax(1000))
     allocate (Location(3,nt))
     allocate (x(nx,ny,nz))
@@ -163,9 +167,6 @@ program test
             end do
         end do
         !Output Gird Coordinates
-
-
-
         !
         !calculate Uwind and C0 for 4X4X4 do    ian
         do i=1,4
@@ -322,6 +323,12 @@ program test
         zver = zver+dt*(ValC*Nnew(3))+0.!ValW
         print*,  zver,ValU, ValC
 
+        !check reciever compact
+        D_to_Re = sqrt((xver - Xre)**2.0 + (yver - Yre)**2.0 + (zver - Zre)**2.0)
+        if (D_to_Re <= 0.0254) then
+            print*, 'Connected'
+            stop
+        endif
     enddo
 
     ! write(91,*) ReflectionTimeIndex
