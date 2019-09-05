@@ -29,7 +29,7 @@ program test
     real(wp)  ::  xp,yp,zp,xm,ym,zm, Cdown,  Udown,  Vdown, Cup,    Vup,    Uup
     real(wp)  ::  xl,yl,zl,xr,yr,zr, Cleft,  Uleft,  Vleft, Cright, Uright, Vright
     real(wp)  ::  xf,yf,zf,xb,yb,zb, Cfront, Ufront, Vfront,Cback,  Uback , Vback
-    real(wp)  ::  Xre, Yre, Zre
+    real(wp)  ::  Xre, Yre, Zre, D_to_Re, Xrange, Yrange, Zrange
     character(100)  ::  str2theta, str2phi
 
     call get_command_argument(1, str2theta)
@@ -39,15 +39,19 @@ program test
     angle_phi = angle_phi*4.0 * ATAN(1.0)/180.0
     angle_theta = angle_theta*4.0 * ATAN(1.0)/180.0
 
+    
     nx = 1000
     ny = 50
     nz = 1000
-    nt = 10
-    dt = 0.01_wp
+    nt = 11
+    dt = 0.001_wp
+    Xrange = 20._wp
+    Yrange = 4._wp
+    Zrange = 3._wp
 
-    Xre = 100000._wp * .8
-    Yre = 50000._wp * .01
-    Zre = 100000._wp * 0.1
+    Xre = Xrange * .1
+    Yre = Yrange * .01
+    Zre = Zrange * .1
     allocate (ReflectionPointMax(1000))
     allocate (Location(3,nt))
     allocate (x(nx,ny,nz))
@@ -76,13 +80,13 @@ program test
     allocate (NNormalN(3,nt))
 
     do i=1,nx
-      x(i,:,:) = 100000._wp*(dble(i-1)/dble(nx-1)) 
+      x(i,:,:) = Xrange*(dble(i-1)/dble(nx-1)) 
     end do
     do i=1,ny
-      y(:,i,:) = 50000._wp*(dble(i-1)/dble(ny-1))
+      y(:,i,:) = Yrange*(dble(i-1)/dble(ny-1))
     end do
     do i=1,nz
-      z(:,:,i) = 100000._wp*(dble(i-1)/dble(nz-1))
+      z(:,:,i) = Zrange*(dble(i-1)/dble(nz-1))
     end do
 
     !do i=1,nz
@@ -97,9 +101,9 @@ program test
     !end do
     
     !z_step = zrange/nz
-    xver = 100000._wp*.13_wp
-    yver = 50000._wp*.08_wp
-    zver = 20000.+10.
+    xver = Xrange *.13_wp
+    yver = Yrange *.08_wp
+    zver = Zrange*.2_wp
 
     n(1) = cos(angle_theta)!1._wp/(2._wp)**.5_wp
     n(2) = 0!sin(angle_phi)
@@ -118,7 +122,7 @@ program test
         Location(3,NTT) = zver
         
         omega=30.
-        d1 = 1000000._wp
+        d1 = 10000._wp
         ii = 0
         jj = 0
         kk = 0
@@ -127,13 +131,29 @@ program test
         NNormalN(2,NTT) = n(2)
         NNormalN(3,NTT) = n(3)
         !boundary condition judgement (perfect reflecction)
-        If (Zver<(200._wp)) then
-            Zver=400.-abs(Zver)
-            Nnew(3)=-Nnew(3)
+        if ((Zver<(Zrange/nz))) then
+            Zver = (2*Zrange/nz) - abs(Zver)
+            Nnew(3) = -Nnew(3)
             !write(91, *) NTT
             ReflectionPointMax(ReflectionTimeIndex) = NTT
             ReflectionTimeIndex = ReflectionTimeIndex + 1
         endif
+        if ((Zver>(Zrange*(nz-1/nz)))) then
+            Zver = 2*Zrange - abs(Zver) 
+            Nnew(3) = -Nnew(3)
+            ReflectionPointMax(ReflectionTimeIndex) = NTT
+            ReflectionTimeIndex = ReflectionTimeIndex + 1
+        endif
+
+        !check left and right boundary
+        if ((Yver<(Yrange/ny)) .or. (Yver>(Yrange*(ny-1/ny)))) then
+            Yver = (2*Yrange/ny) - abs(yver)
+            Nnew(2)=-Nnew(2)
+            !write(91, *) NTT
+            ReflectionPointMax(ReflectionTimeIndex) = NTT
+            ReflectionTimeIndex = ReflectionTimeIndex + 1
+        endif
+        !
         !write(3,'(3e16.8)') xver, yver, zver
         do i = 1,nx-1
             do j = 1,ny-1
@@ -240,15 +260,15 @@ program test
                     Cfront= Soundspeed(xf,yf,zf)
                     Cback = Soundspeed(xb,yb,zb)
 
-                    Duz(i,j,k) = (Uup-Udown)    / 200.
-                    Dcz(i,j,k) = (Cup-Cdown)    / 200.
-                    Dvz(i,j,k) = (Vup-Vdown)    / 200.
-                    Duy(i,j,k) = (Uleft-Uright) / 200.
-                    Dcy(i,j,k) = (Cleft-Cright) / 200.
-                    Dvy(i,j,k) = (Vleft-Vright) / 200.
-                    Dux(i,j,k) = (Ufront-Uback) / 200.
-                    Dcx(i,j,k) = (Cfront-Cback) / 200.
-                    Dvx(i,j,k) = (Vfront-Vback) / 200.
+                    Duz(i,j,k) = (Uup-Udown)    / (Zrange / nz)
+                    Dcz(i,j,k) = (Cup-Cdown)    / (Zrange / nz)
+                    Dvz(i,j,k) = (Vup-Vdown)    / (Zrange / nz)
+                    Duy(i,j,k) = (Uleft-Uright) / (Yrange / ny)
+                    Dcy(i,j,k) = (Cleft-Cright) / (Yrange / ny)
+                    Dvy(i,j,k) = (Vleft-Vright) / (Yrange / ny)
+                    Dux(i,j,k) = (Ufront-Uback) / (Xrange / nx)
+                    Dcx(i,j,k) = (Cfront-Cback) / (Xrange / nx)
+                    Dvx(i,j,k) = (Vfront-Vback) / (Xrange / nx)
 
                 end do
             end do
@@ -321,7 +341,7 @@ program test
         xver = xver+dt*(ValC*Nnew(1)+ValU)
         yver = yver+dt*(ValC*Nnew(2)+ValV)+0.!ValV
         zver = zver+dt*(ValC*Nnew(3))+0.!ValW
-        print*,  zver,ValU, ValC
+        print*,  zver, yver, xver
 
         !check reciever compact
         D_to_Re = sqrt((xver - Xre)**2.0 + (yver - Yre)**2.0 + (zver - Zre)**2.0)
@@ -395,43 +415,63 @@ function  Soundspeed(x,y,z)
 end function
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-function  Uwindspeed(x,y,z)
-  use bspline_kinds_module, only: wp
-  implicit none
-  real               ::  xt, yt, zt
-  real(wp)           ::  Uwindspeed, x,y,z
-  real, dimension(2) ::  w
+! function  Uwindspeed(x,y,z)
+!   use bspline_kinds_module, only: wp
+!   implicit none
+!   real               ::  xt, yt, zt
+!   real(wp)           ::  Uwindspeed, x,y,z
+!   real, dimension(2) ::  w
   
-  xt = real(x)
-  yt = real(y)
-  zt = real(z)
+!   xt = real(x)
+!   yt = real(y)
+!   zt = real(z)
   
-  call GWS5(1990,5.0,zt/1000.,(29.6516344+yt/1000./111.32),&
-       &(-82.3248262+xt/1000./96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
+!   call GWS5(1990,5.0,zt/1000.,(29.6516344+yt/1000./111.32),&
+!        &(-82.3248262+xt/1000./96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
   
-  Uwindspeed = w(2)
-  !Uwindspeed = (z-2000)**2./100000
+!   Uwindspeed = w(2)
+!   !Uwindspeed = (z-2000)**2./100000
+! end function
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function Uwindspeed(x,y,z)
+    use bspline_kinds_module, only: wp
+    implicit none
+    real(wp)           ::  Uwindspeed, x,y,z
+
+    Uwindspeed = 13.43*z**0.05648 - 5.917
+    
 end function
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+! function  Vwindspeed(x,y,z)
+!   use bspline_kinds_module, only: wp
+!   implicit none
+!   real               ::  xt, yt, zt
+!   real(wp)           ::  Vwindspeed, x,y,z
+!   real, dimension(2) ::  w
+  
+!   xt = real(x)
+!   yt = real(y)
+!   zt = real(z)
+  
+!   call GWS5(1990,5.0,zt/1000.,(29.6516344+yt/1000./111.32),&
+!        &(-82.3248262+xt/1000./96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
+  
+!   Vwindspeed = w(1)
+!   !Vwindspeed = 0.!(z-2000)**2./1000000
+
+! end function
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 function  Vwindspeed(x,y,z)
-  use bspline_kinds_module, only: wp
-  implicit none
-  real               ::  xt, yt, zt
-  real(wp)           ::  Vwindspeed, x,y,z
-  real, dimension(2) ::  w
+    use bspline_kinds_module, only: wp
+    implicit none
+    real               ::  xt, yt, zt
+    real(wp)           ::  Vwindspeed, x,y,z
+    real, dimension(2) ::  w
+    
+    Vwindspeed = 0.!(z-2000)**2./1000000
   
-  xt = real(x)
-  yt = real(y)
-  zt = real(z)
-  
-  call GWS5(1990,5.0,zt/1000.,(29.6516344+yt/1000./111.32),&
-       &(-82.3248262+xt/1000./96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
-  
-  Vwindspeed = w(1)
-  !Vwindspeed = 0.!(z-2000)**2./1000000
-
-end function
+  end function
 
 !***************************************************************************************
     
