@@ -43,15 +43,15 @@ program test
     nx = 1000
     ny = 50
     nz = 1000
-    nt = 11
-    dt = 0.001_wp
-    Xrange = 20._wp
-    Yrange = 4._wp
-    Zrange = 3._wp
+    nt = 120
+    dt = 1.0_wp
+    Xrange = 500000._wp
+    Yrange = 50000._wp
+    Zrange = 200000._wp
 
-    Xre = Xrange * .1
-    Yre = Yrange * .01
-    Zre = Zrange * .1
+    Xre = Xrange * .6
+    Yre = Yrange * .5
+    Zre = Zrange * .001
     allocate (ReflectionPointMax(1000))
     allocate (Location(3,nt))
     allocate (x(nx,ny,nz))
@@ -101,16 +101,16 @@ program test
     !end do
     
     !z_step = zrange/nz
-    xver = Xrange *.13_wp
-    yver = Yrange *.08_wp
-    zver = Zrange*.2_wp
+    xver = Xrange *.01_wp
+    yver = Yrange *.5_wp
+    zver = Zrange*.005_wp
 
-    n(1) = cos(angle_theta)!1._wp/(2._wp)**.5_wp
-    n(2) = 0!sin(angle_phi)
+    n(1) = cos(angle_theta)*cos(angle_phi)!1._wp/(2._wp)**.5_wp
+    n(2) = cos(angle_theta)*sin(angle_phi)!sin(angle_phi)
     n(3) = sin(angle_theta)!1._wp/(2._wp)**.5_wp
     Nnew = n
     print*, n(1), n(2), n(3)
-     
+    print*, xver, yver, zver
     call cellcenter(x,y,z,xc,yc,zc,nx,ny,nz)
     
     ReflectionTimeIndex = 1
@@ -121,8 +121,8 @@ program test
         Location(2,NTT) = yver
         Location(3,NTT) = zver
         
-        omega=30.
-        d1 = 10000._wp
+        omega=3000.
+        d1 = Xrange**2.0!100000000._wp
         ii = 0
         jj = 0
         kk = 0
@@ -130,6 +130,7 @@ program test
         NNormalN(1,NTT) = n(1) 
         NNormalN(2,NTT) = n(2)
         NNormalN(3,NTT) = n(3)
+
         !boundary condition judgement (perfect reflecction)
         if ((Zver<(Zrange/nz))) then
             Zver = (2*Zrange/nz) - abs(Zver)
@@ -138,27 +139,12 @@ program test
             ReflectionPointMax(ReflectionTimeIndex) = NTT
             ReflectionTimeIndex = ReflectionTimeIndex + 1
         endif
-        if ((Zver>(Zrange*(nz-1/nz)))) then
-            Zver = 2*Zrange - abs(Zver) 
-            Nnew(3) = -Nnew(3)
-            ReflectionPointMax(ReflectionTimeIndex) = NTT
-            ReflectionTimeIndex = ReflectionTimeIndex + 1
-        endif
-
-        !check left and right boundary
-        if ((Yver<(Yrange/ny)) .or. (Yver>(Yrange*(ny-1/ny)))) then
-            Yver = (2*Yrange/ny) - abs(yver)
-            Nnew(2)=-Nnew(2)
-            !write(91, *) NTT
-            ReflectionPointMax(ReflectionTimeIndex) = NTT
-            ReflectionTimeIndex = ReflectionTimeIndex + 1
-        endif
-        !
+        
         !write(3,'(3e16.8)') xver, yver, zver
         do i = 1,nx-1
             do j = 1,ny-1
                 do,k = 1,nz-1
-                    d = dabs((xver-xc(i,j,k))**2+(yver-yc(i,j,k))**2+(zver-zc(i,j,k))**2)
+                    d = sqrt(dabs((xver-xc(i,j,k))**2+(yver-yc(i,j,k))**2+(zver-zc(i,j,k))**2))
                     if (d<d1) then
                         d1 = d
                         ii = i
@@ -315,10 +301,11 @@ program test
         !you have all the parameters to find n^bar
         !for one time step, your finite difference method for n^bar:
 
-        Knormal = omega/ValC
+        Knormal = omega/Soundspeed(xver,yver,zver)
         Kx = Knormal*Nnew(1)
         Ky = Knormal*Nnew(2)
         Kz = Knormal*Nnew(3)
+
 
         Term2(1) = Valdux*kx+Valdvx*ky+Valdwx*kz!dudx*kx+dvdx*ky+0._wp
         Term2(2) = Valduy*kx+Valdvy*ky+Valdwy*kz!dudy*kx+dvdy*ky+0._wp
@@ -341,13 +328,17 @@ program test
         xver = xver+dt*(ValC*Nnew(1)+ValU)
         yver = yver+dt*(ValC*Nnew(2)+ValV)+0.!ValV
         zver = zver+dt*(ValC*Nnew(3))+0.!ValW
+        print*,  ValU, ValV, ValC
         print*,  zver, yver, xver
 
         !check reciever compact
         D_to_Re = sqrt((xver - Xre)**2.0 + (yver - Yre)**2.0 + (zver - Zre)**2.0)
-        if (D_to_Re <= 0.0254) then
+        if (D_to_Re <= 100) then
             print*, 'Connected'
             stop
+            open(unit = 33, file = './Select/Connected'//trim(str2phi)//'-'//trim(str2theta)//'.txt',form='formatted')
+            write(33,*) 'This ray is connected'
+            close(33)
         endif
     enddo
 
@@ -415,63 +406,63 @@ function  Soundspeed(x,y,z)
 end function
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-! function  Uwindspeed(x,y,z)
-!   use bspline_kinds_module, only: wp
-!   implicit none
-!   real               ::  xt, yt, zt
-!   real(wp)           ::  Uwindspeed, x,y,z
-!   real, dimension(2) ::  w
+function  Uwindspeed(x,y,z)
+  use bspline_kinds_module, only: wp
+  implicit none
+  real               ::  xt, yt, zt
+  real(wp)           ::  Uwindspeed, x,y,z
+  real, dimension(2) ::  w
   
-!   xt = real(x)
-!   yt = real(y)
-!   zt = real(z)
+  xt = real(x)
+  yt = real(y)
+  zt = real(z)
   
-!   call GWS5(1990,5.0,zt/1000.,(29.6516344+yt/1000./111.32),&
-!        &(-82.3248262+xt/1000./96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
+  call GWS5(1990,5.0,zt/1000.,(29.6516344+yt/1000./111.32),&
+       &(-82.3248262+xt/1000./96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
   
-!   Uwindspeed = w(2)
-!   !Uwindspeed = (z-2000)**2./100000
-! end function
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-function Uwindspeed(x,y,z)
-    use bspline_kinds_module, only: wp
-    implicit none
-    real(wp)           ::  Uwindspeed, x,y,z
-
-    Uwindspeed = 13.43*z**0.05648 - 5.917
-    
+  Uwindspeed = w(2)
+  !Uwindspeed = (z-2000)**2./100000
 end function
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-! function  Vwindspeed(x,y,z)
-!   use bspline_kinds_module, only: wp
-!   implicit none
-!   real               ::  xt, yt, zt
-!   real(wp)           ::  Vwindspeed, x,y,z
-!   real, dimension(2) ::  w
-  
-!   xt = real(x)
-!   yt = real(y)
-!   zt = real(z)
-  
-!   call GWS5(1990,5.0,zt/1000.,(29.6516344+yt/1000./111.32),&
-!        &(-82.3248262+xt/1000./96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
-  
-!   Vwindspeed = w(1)
-!   !Vwindspeed = 0.!(z-2000)**2./1000000
+! function Uwindspeed(x,y,z)
+!     use bspline_kinds_module, only: wp
+!     implicit none
+!     real(wp)           ::  Uwindspeed, x,y,z
 
+!     Uwindspeed = 13.43*z**0.05648 - 5.917
+    
 ! end function
-
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 function  Vwindspeed(x,y,z)
-    use bspline_kinds_module, only: wp
-    implicit none
-    real               ::  xt, yt, zt
-    real(wp)           ::  Vwindspeed, x,y,z
-    real, dimension(2) ::  w
-    
-    Vwindspeed = 0.!(z-2000)**2./1000000
+  use bspline_kinds_module, only: wp
+  implicit none
+  real               ::  xt, yt, zt
+  real(wp)           ::  Vwindspeed, x,y,z
+  real, dimension(2) ::  w
   
-  end function
+  xt = real(x)
+  yt = real(y)
+  zt = real(z)
+  
+  call GWS5(1990,5.0,zt/1000.,(29.6516344+yt/1000./111.32),&
+       &(-82.3248262+xt/1000./96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
+  
+  Vwindspeed = w(1)
+  !Vwindspeed = 0.!(z-2000)**2./1000000
+
+end function
+
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+! function  Vwindspeed(x,y,z)
+!     use bspline_kinds_module, only: wp
+!     implicit none
+!     real               ::  xt, yt, zt
+!     real(wp)           ::  Vwindspeed, x,y,z
+!     real, dimension(2) ::  w
+    
+!     Vwindspeed = 0.!(z-2000)**2./1000000
+  
+!   end function
 
 !***************************************************************************************
     
