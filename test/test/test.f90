@@ -32,19 +32,23 @@ program test
     real(wp)  ::  Xre, Yre, Zre, D_to_Re, Xrange, Yrange, Zrange
     character(100)  ::  str2theta, str2phi
 
+    real, dimension(2) ::  T
+    real, dimension(7) ::  AP
+    real, dimension(9) ::  DDD
+
     call get_command_argument(1, str2theta)
     call get_command_argument(2, str2phi) 
     read(str2phi,*)angle_phi
     read(str2theta,*)angle_theta
-    angle_phi = angle_phi*4.0 * ATAN(1.0)/180.0
-    angle_theta = angle_theta*4.0 * ATAN(1.0)/180.0
+    angle_phi = angle_phi*4.0 * ATAN(1.0)/180.0!1*4.0 * ATAN(1.0)/180.0
+    angle_theta = angle_theta*4.0 * ATAN(1.0)/180.0!15*4.0 * ATAN(1.0)/180.0
 
     
     nx = 1000
     ny = 50
     nz = 1000
-    nt = 120
-    dt = 1.0_wp
+    nt = 420
+    dt = 2.0_wp
     Xrange = 500000._wp
     Yrange = 50000._wp
     Zrange = 200000._wp
@@ -109,8 +113,8 @@ program test
     n(2) = cos(angle_theta)*sin(angle_phi)!sin(angle_phi)
     n(3) = sin(angle_theta)!1._wp/(2._wp)**.5_wp
     Nnew = n
-    print*, n(1), n(2), n(3)
-    print*, xver, yver, zver
+    !print*, n(1), n(2), n(3)
+    !print*, xver, yver, zver
     call cellcenter(x,y,z,xc,yc,zc,nx,ny,nz)
     
     ReflectionTimeIndex = 1
@@ -249,13 +253,16 @@ program test
                     Duz(i,j,k) = (Uup-Udown)    / (Zrange / nz)
                     Dcz(i,j,k) = (Cup-Cdown)    / (Zrange / nz)
                     Dvz(i,j,k) = (Vup-Vdown)    / (Zrange / nz)
+                    Dwz(i,j,k) = 0
                     Duy(i,j,k) = (Uleft-Uright) / (Yrange / ny)
                     Dcy(i,j,k) = (Cleft-Cright) / (Yrange / ny)
                     Dvy(i,j,k) = (Vleft-Vright) / (Yrange / ny)
+                    Dwy(i,j,k) = 0
                     Dux(i,j,k) = (Ufront-Uback) / (Xrange / nx)
                     Dcx(i,j,k) = (Cfront-Cback) / (Xrange / nx)
                     Dvx(i,j,k) = (Vfront-Vback) / (Xrange / nx)
-
+                    Dwx(i,j,k) = 0
+                
                 end do
             end do
         end do
@@ -305,7 +312,7 @@ program test
         Kx = Knormal*Nnew(1)
         Ky = Knormal*Nnew(2)
         Kz = Knormal*Nnew(3)
-
+        
 
         Term2(1) = Valdux*kx+Valdvx*ky+Valdwx*kz!dudx*kx+dvdx*ky+0._wp
         Term2(2) = Valduy*kx+Valdvy*ky+Valdwy*kz!dudy*kx+dvdy*ky+0._wp
@@ -328,8 +335,8 @@ program test
         xver = xver+dt*(ValC*Nnew(1)+ValU)
         yver = yver+dt*(ValC*Nnew(2)+ValV)+0.!ValV
         zver = zver+dt*(ValC*Nnew(3))+0.!ValW
-        print*,  ValU, ValV, ValC
-        print*,  zver, yver, xver
+        !print*,  ValU, ValV, ValC
+        print*,  xver, yver, zver, ValC 
 
         !check reciever compact
         D_to_Re = sqrt((xver - Xre)**2.0 + (yver - Yre)**2.0 + (zver - Zre)**2.0)
@@ -394,12 +401,12 @@ function  Soundspeed(x,y,z)
   real, dimension(9) ::  DDD
   
   AP = 1.0
-  xt = real(x)
-  yt = real(y)
-  zt = real(z)
-  call GTD7(1990,5.0,zt/1000.,(29.6516344+yt/1000./111.32),&
-       &(-82.3248262+xt/1000./96.74),12.0,150.0,150.0,AP,48,DDD,T)
-  TT = 273+T(2)
+  xt = real(x/1000)
+  yt = real(y/1000)
+  zt = real(z/1000)
+  call GTD7(1990,5.0,real(zt),real(29.6516344+(yt/111.32)),&
+       &real(-82.3248262+(xt/96.74)),12.0,150.0,150.0,AP,48,DDD,T)
+  TT = T(2)
   Soundspeed = sqrt(TT*1.4*287)!.3_dp_t*Z
   !Soundspeed = 323._dp_t+Z/10._dp_t!.2_dp_t*z
   !print*, TT, zt
@@ -413,12 +420,12 @@ function  Uwindspeed(x,y,z)
   real(wp)           ::  Uwindspeed, x,y,z
   real, dimension(2) ::  w
   
-  xt = real(x)
-  yt = real(y)
-  zt = real(z)
+  xt = real(x/1000)
+  yt = real(y/1000)
+  zt = real(z/1000)
   
-  call GWS5(1990,5.0,zt/1000.,(29.6516344+yt/1000./111.32),&
-       &(-82.3248262+xt/1000./96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
+  call GWS5(1990,5.0,zt,real(29.6516344+yt/111.32),&
+       &real(-82.3248262+xt/96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
   
   Uwindspeed = w(2)
   !Uwindspeed = (z-2000)**2./100000
@@ -440,12 +447,12 @@ function  Vwindspeed(x,y,z)
   real(wp)           ::  Vwindspeed, x,y,z
   real, dimension(2) ::  w
   
-  xt = real(x)
-  yt = real(y)
-  zt = real(z)
+  xt = real(x/1000)
+  yt = real(y/1000)
+  zt = real(z/1000)
   
-  call GWS5(1990,5.0,zt/1000.,(29.6516344+yt/1000./111.32),&
-       &(-82.3248262+xt/1000./96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
+  call GWS5(1990,5.0,zt,real(29.6516344+yt/111.32),&
+       &real(-82.3248262+xt/96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
   
   Vwindspeed = w(1)
   !Vwindspeed = 0.!(z-2000)**2./1000000
