@@ -65,8 +65,12 @@ clean:
 $(PRG_OBJ) : $(MOD_OBJS)
 
 # Blocks and allocations depends on shared
+
+
 cellcenter.o bspline_module.o bspline_sub_module.o bspline_oo_module.o : bspline_kinds_module.o
 
 bspline_oo_module.o bspline_module.o : bspline_sub_module.o
 
 bspline_module.o : bspline_oo_module.o
+
+InterpD.o : bspline_module.o

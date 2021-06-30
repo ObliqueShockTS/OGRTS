@@ -36,26 +36,31 @@ program test
     real, dimension(7) ::  AP
     real, dimension(9) ::  DDD
 
-    call get_command_argument(1, str2theta)
-    call get_command_argument(2, str2phi) 
-    read(str2phi,*)angle_phi
-    read(str2theta,*)angle_theta
+    ! call get_command_argument(1, str2theta)
+    ! call get_command_argument(2, str2phi) 
+    ! read(str2phi,*)angle_phi
+    ! read(str2theta,*)angle_theta
+    angle_phi = 0    ! horizontal launching angle
+    angle_theta = 45 ! vertical launching angle
     angle_phi = angle_phi*4.0 * ATAN(1.0)/180.0!1*4.0 * ATAN(1.0)/180.0
     angle_theta = angle_theta*4.0 * ATAN(1.0)/180.0!15*4.0 * ATAN(1.0)/180.0
-
     
-    nx = 1000
+    
+    nx = 100
     ny = 50
     nz = 1000
-    nt = 420
-    dt = 2.0_wp
-    Xrange = 500000._wp
-    Yrange = 50000._wp
-    Zrange = 200000._wp
+    nt = 100
+    dt = 0.05_wp
+    Xrange = 10500._wp
+    Yrange = 50._wp
+    Zrange = 2000._wp
 
-    Xre = Xrange * .6
-    Yre = Yrange * .5
-    Zre = Zrange * .001
+    xver = 200!Xrange *.1_wp
+    yver = 25 *.5_wp
+    zver = 200_wp
+    ! Xre = Xrange * .1
+    ! Yre = Yrange * .5
+    ! Zre = Zrange * .01
     allocate (ReflectionPointMax(1000))
     allocate (Location(3,nt))
     allocate (x(nx,ny,nz))
@@ -105,9 +110,7 @@ program test
     !end do
     
     !z_step = zrange/nz
-    xver = Xrange *.01_wp
-    yver = Yrange *.5_wp
-    zver = Zrange*.005_wp
+
 
     n(1) = cos(angle_theta)*cos(angle_phi)!1._wp/(2._wp)**.5_wp
     n(2) = cos(angle_theta)*sin(angle_phi)!sin(angle_phi)
@@ -121,6 +124,8 @@ program test
     !open(91,file = '/home/tianshu/Documents/DATATRANSFER/ReflectionTime.txt')
 
     do NTT=1,nt
+        !if (zver<0) then
+
         Location(1,NTT) = xver
         Location(2,NTT) = yver
         Location(3,NTT) = zver
@@ -131,7 +136,7 @@ program test
         jj = 0
         kk = 0
 
-        NNormalN(1,NTT) = n(1) 
+        NNormalN(1,NTT) = n(1)
         NNormalN(2,NTT) = n(2)
         NNormalN(3,NTT) = n(3)
 
@@ -142,6 +147,8 @@ program test
             !write(91, *) NTT
             ReflectionPointMax(ReflectionTimeIndex) = NTT
             ReflectionTimeIndex = ReflectionTimeIndex + 1
+
+            
         endif
         
         !write(3,'(3e16.8)') xver, yver, zver
@@ -250,17 +257,17 @@ program test
                     Cfront= Soundspeed(xf,yf,zf)
                     Cback = Soundspeed(xb,yb,zb)
 
-                    Duz(i,j,k) = (Uup-Udown)    / (Zrange / nz)
-                    Dcz(i,j,k) = (Cup-Cdown)    / (Zrange / nz)
-                    Dvz(i,j,k) = (Vup-Vdown)    / (Zrange / nz)
+                    Duz(i,j,k) = (Uup-Udown)    / (Zrange / nz)/2
+                    Dcz(i,j,k) = (Cup-Cdown)    / (Zrange / nz)/2
+                    Dvz(i,j,k) = (Vup-Vdown)    / (Zrange / nz)/2
                     Dwz(i,j,k) = 0
-                    Duy(i,j,k) = (Uleft-Uright) / (Yrange / ny)
-                    Dcy(i,j,k) = (Cleft-Cright) / (Yrange / ny)
-                    Dvy(i,j,k) = (Vleft-Vright) / (Yrange / ny)
+                    Duy(i,j,k) = (Uleft-Uright) / (Yrange / ny)/2
+                    Dcy(i,j,k) = (Cleft-Cright) / (Yrange / ny)/2
+                    Dvy(i,j,k) = (Vleft-Vright) / (Yrange / ny)/2
                     Dwy(i,j,k) = 0
-                    Dux(i,j,k) = (Ufront-Uback) / (Xrange / nx)
-                    Dcx(i,j,k) = (Cfront-Cback) / (Xrange / nx)
-                    Dvx(i,j,k) = (Vfront-Vback) / (Xrange / nx)
+                    Dux(i,j,k) = (Ufront-Uback) / (Xrange / nx)/2
+                    Dcx(i,j,k) = (Cfront-Cback) / (Xrange / nx)/2
+                    Dvx(i,j,k) = (Vfront-Vback) / (Xrange / nx)/2
                     Dwx(i,j,k) = 0
                 
                 end do
@@ -308,7 +315,7 @@ program test
         !you have all the parameters to find n^bar
         !for one time step, your finite difference method for n^bar:
 
-        Knormal = omega/Soundspeed(xver,yver,zver)
+        Knormal = 2*ATAN(1.0)/180.0/ValC!omega/Soundspeed(xver,yver,zver)
         Kx = Knormal*Nnew(1)
         Ky = Knormal*Nnew(2)
         Kz = Knormal*Nnew(3)
@@ -324,6 +331,7 @@ program test
 
         !Knew = K(nt)+dt*(-Term1-Term2)
         !print*,valduz
+        !Term2 = 0
         Nnew = Nnew+dt/Knormal*(-Term1-Term2-sum(Nnew*(-Term1-Term2))*Nnew)
         Nnew(1) = Nnew(1)/(sqrt((Nnew(1)**2+Nnew(2)**2+Nnew(3)**2)))
         Nnew(2) = Nnew(2)/(sqrt((Nnew(1)**2+Nnew(2)**2+Nnew(3)**2)))
@@ -332,11 +340,12 @@ program test
         Yrecord(NTT) = yver
         Zrecord(NTT) = zver
 
-        xver = xver+dt*(ValC*Nnew(1)+ValU)
+        xver = xver+dt*(ValC*Nnew(1)+ValU)!+ValU)
         yver = yver+dt*(ValC*Nnew(2)+ValV)+0.!ValV
         zver = zver+dt*(ValC*Nnew(3))+0.!ValW
         !print*,  ValU, ValV, ValC
-        print*,  xver, yver, zver, ValC 
+        print*,  xver, zver, Valdcz, Nnew(3)
+        !print*,  Nnew(1), Nnew(2), Nnew(3)
 
         !check reciever compact
         D_to_Re = sqrt((xver - Xre)**2.0 + (yver - Yre)**2.0 + (zver - Zre)**2.0)
@@ -347,7 +356,7 @@ program test
             write(33,*) 'This ray is connected'
             close(33)
         endif
-    enddo
+    end do
 
     ! write(91,*) ReflectionTimeIndex
     ! if (ReflectionTimeIndex > 1) then
@@ -355,7 +364,7 @@ program test
     ! endif
     ! close(91)
     call system ( "mkdir -p " // 'Data' )
-    open(unit = 3, file ='./Data/DataXYZ'//trim(str2phi)//'-'//trim(str2theta)//'.txt',form='formatted')
+    open(unit = 3, file ='./Data/DataXYZ45LSLW.dat',form='formatted')
     write(3, '(3e16.8)') Location
     close(3)
     
@@ -407,8 +416,8 @@ function  Soundspeed(x,y,z)
   call GTD7(1990,5.0,real(zt),real(29.6516344+(yt/111.32)),&
        &real(-82.3248262+(xt/96.74)),12.0,150.0,150.0,AP,48,DDD,T)
   TT = T(2)
-  Soundspeed = sqrt(TT*1.4*287)!.3_dp_t*Z
-  !Soundspeed = 323._dp_t+Z/10._dp_t!.2_dp_t*z
+  !Soundspeed = sqrt(TT*1.4*287)!.3_dp_t*Z
+  Soundspeed = 343._wp!+abs(z)*0.1!2/1000._wp!.2_dp_t*z
   !print*, TT, zt
 end function
 
@@ -428,7 +437,7 @@ function  Uwindspeed(x,y,z)
        &real(-82.3248262+xt/96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
   
   Uwindspeed = w(2)
-  !Uwindspeed = (z-2000)**2./100000
+  Uwindspeed = 10+0.000001*z**3/2!z**2/200!(z-2000)**2./100000
 end function
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ! function Uwindspeed(x,y,z)
@@ -455,7 +464,7 @@ function  Vwindspeed(x,y,z)
        &real(-82.3248262+xt/96.74),12.0,150.0,150.0,(/1.0,1.0/),w)
   
   Vwindspeed = w(1)
-  !Vwindspeed = 0.!(z-2000)**2./1000000
+  Vwindspeed = 0!(z-2000)**2./1000000
 
 end function
 
